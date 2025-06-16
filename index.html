@@ -141,6 +141,8 @@
             max-width: 600px;
             border-radius: 8px;
             position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .close {
@@ -161,7 +163,7 @@
             font-weight: bold;
         }
 
-        .status-concluida {
+        .status-concluída {
             color: #27ae60;
             font-weight: bold;
         }
@@ -169,6 +171,161 @@
         .status-cancelada {
             color: #e74c3c;
             font-weight: bold;
+        }
+
+        /* Estilos do Calendário */
+        .calendar-container {
+            margin-bottom: 30px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #34495e;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .calendar-nav {
+            cursor: pointer;
+            padding: 5px 15px;
+            background-color: #2c3e50;
+            border-radius: 3px;
+            transition: background-color 0.3s;
+        }
+
+        .calendar-nav:hover {
+            background-color: #1a252f;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 3px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .calendar-day:hover {
+            background-color: #e8f4f8;
+            transform: scale(1.05);
+        }
+
+        .calendar-day.other-month {
+            color: #bdc3c7;
+            background-color: #f8f9fa;
+        }
+
+        .calendar-day.today {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        .calendar-day.has-vistoria {
+            background-color: #e8f5e9;
+            border: 2px solid #27ae60;
+        }
+
+        .calendar-day.has-vistoria.today {
+            background-color: #2980b9;
+            border: 2px solid #27ae60;
+        }
+
+        .vistoria-count {
+            position: absolute;
+            bottom: 2px;
+            right: 5px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .vistorias-dia-list {
+            margin-top: 15px;
+        }
+
+        .vistoria-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+
+        .vistoria-item.status-pendente {
+            border-left-color: #f39c12;
+        }
+
+        .vistoria-item.status-concluída {
+            border-left-color: #27ae60;
+        }
+
+        .vistoria-item.status-cancelada {
+            border-left-color: #e74c3c;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            background-color: #ecf0f1;
+            transition: background-color 0.3s;
+        }
+
+        .tab:hover {
+            background-color: #dfe6e9;
+        }
+
+        .tab.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
     </style>
 </head>
@@ -180,25 +337,49 @@
     </header>
 
     <div class="container">
-        <div class="card">
-            <h2>Gerenciamento de Vistorias</h2>
-            <button class="btn btn-success" onclick="abrirModalNova()">Nova Vistoria</button>
-            
-            <table id="tabelaVistorias">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Cliente</th>
-                        <th>Imóvel</th>
-                        <th>Data</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="listaVistorias">
-                    <!-- Vistorias serão carregadas aqui -->
-                </tbody>
-            </table>
+        <!-- Abas -->
+        <div class="tabs">
+            <div class="tab active" onclick="mostrarAba('calendario')">Calendário</div>
+            <div class="tab" onclick="mostrarAba('lista')">Lista de Vistorias</div>
+        </div>
+
+        <!-- Conteúdo do Calendário -->
+        <div id="calendario" class="tab-content active">
+            <div class="card calendar-container">
+                <h2>Calendário de Vistorias</h2>
+                <div class="calendar-header">
+                    <span class="calendar-nav" onclick="mudarMes(-1)">◀ Anterior</span>
+                    <h3 id="mesAno"></h3>
+                    <span class="calendar-nav" onclick="mudarMes(1)">Próximo ▶</span>
+                </div>
+                <div class="calendar-grid" id="calendario-grid">
+                    <!-- Calendário será gerado aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Conteúdo da Lista -->
+        <div id="lista" class="tab-content">
+            <div class="card">
+                <h2>Gerenciamento de Vistorias</h2>
+                <button class="btn btn-success" onclick="abrirModalNova()">Nova Vistoria</button>
+                
+                <table id="tabelaVistorias">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Imóvel</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaVistorias">
+                        <!-- Vistorias serão carregadas aqui -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -268,9 +449,176 @@
         </div>
     </div>
 
+    <!-- Modal para Vistorias do Dia -->
+    <div id="modalVistoriasDia" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fecharModalDia()">&times;</span>
+            <h2 id="modalDiaTitulo">Vistorias do Dia</h2>
+            <div id="vistoriasDiaContent">
+                <!-- Conteúdo será inserido aqui -->
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Variável para armazenar as vistorias
+        // Variáveis globais
         let vistorias = [];
+        let mesAtual = new Date().getMonth();
+        let anoAtual = new Date().getFullYear();
+
+        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+        // Função para mostrar aba
+        function mostrarAba(aba) {
+            // Remove active de todas as abas
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Adiciona active na aba selecionada
+            if (aba === 'calendario') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('calendario').classList.add('active');
+                renderizarCalendario();
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('lista').classList.add('active');
+            }
+        }
+
+        // Função para renderizar o calendário
+        function renderizarCalendario() {
+            const primeiroDia = new Date(anoAtual, mesAtual, 1);
+            const ultimoDia = new Date(anoAtual, mesAtual + 1, 0);
+            const diasNoMes = ultimoDia.getDate();
+            const primeiroDiaSemana = primeiroDia.getDay();
+            
+            // Atualizar cabeçalho
+            document.getElementById('mesAno').textContent = `${meses[mesAtual]} ${anoAtual}`;
+            
+            // Limpar grid
+            const grid = document.getElementById('calendario-grid');
+            grid.innerHTML = '';
+            
+            // Adicionar cabeçalhos dos dias
+            diasSemana.forEach(dia => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = dia;
+                grid.appendChild(header);
+            });
+            
+            // Dias do mês anterior
+            const diasMesAnterior = new Date(anoAtual, mesAtual, 0).getDate();
+            for (let i = primeiroDiaSemana - 1; i >= 0; i--) {
+                const dia = document.createElement('div');
+                dia.className = 'calendar-day other-month';
+                dia.textContent = diasMesAnterior - i;
+                grid.appendChild(dia);
+            }
+            
+            // Dias do mês atual
+            const hoje = new Date();
+            for (let dia = 1; dia <= diasNoMes; dia++) {
+                const diaElement = document.createElement('div');
+                diaElement.className = 'calendar-day';
+                diaElement.textContent = dia;
+                
+                // Verificar se é hoje
+                if (anoAtual === hoje.getFullYear() && 
+                    mesAtual === hoje.getMonth() && 
+                    dia === hoje.getDate()) {
+                    diaElement.classList.add('today');
+                }
+                
+                // Verificar vistorias neste dia
+                const dataStr = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                const vistoriasDia = vistorias.filter(v => v.data_vistoria === dataStr);
+                
+                if (vistoriasDia.length > 0) {
+                    diaElement.classList.add('has-vistoria');
+                    const count = document.createElement('span');
+                    count.className = 'vistoria-count';
+                    count.textContent = vistoriasDia.length;
+                    diaElement.appendChild(count);
+                }
+                
+                // Adicionar evento de clique
+                diaElement.addEventListener('click', () => mostrarVistoriasDia(dia, mesAtual, anoAtual));
+                
+                grid.appendChild(diaElement);
+            }
+            
+            // Dias do próximo mês
+            const diasRestantes = 42 - (primeiroDiaSemana + diasNoMes);
+            for (let dia = 1; dia <= diasRestantes; dia++) {
+                const diaElement = document.createElement('div');
+                diaElement.className = 'calendar-day other-month';
+                diaElement.textContent = dia;
+                grid.appendChild(diaElement);
+            }
+        }
+
+        // Função para mudar mês
+        function mudarMes(direcao) {
+            mesAtual += direcao;
+            if (mesAtual > 11) {
+                mesAtual = 0;
+                anoAtual++;
+            } else if (mesAtual < 0) {
+                mesAtual = 11;
+                anoAtual--;
+            }
+            renderizarCalendario();
+        }
+
+        // Função para mostrar vistorias do dia
+        function mostrarVistoriasDia(dia, mes, ano) {
+            const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+            const vistoriasDia = vistorias.filter(v => v.data_vistoria === dataStr);
+            
+            const modal = document.getElementById('modalVistoriasDia');
+            const titulo = document.getElementById('modalDiaTitulo');
+            const content = document.getElementById('vistoriasDiaContent');
+            
+            titulo.textContent = `Vistorias - ${dia} de ${meses[mes]} de ${ano}`;
+            
+            if (vistoriasDia.length === 0) {
+                content.innerHTML = '<p>Nenhuma vistoria agendada para este dia.</p>';
+            } else {
+                content.innerHTML = '<div class="vistorias-dia-list">';
+                vistoriasDia.forEach(vistoria => {
+                    content.innerHTML += `
+                        <div class="vistoria-item status-${vistoria.status.toLowerCase()}">
+                            <h4>${vistoria.cliente}</h4>
+                            <p><strong>Endereço:</strong> ${vistoria.endereco}</p>
+                            <p><strong>Tipo:</strong> ${vistoria.tipo_imovel}</p>
+                            <p><strong>Status:</strong> <span class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</span></p>
+                            ${vistoria.observacoes ? `<p><strong>Observações:</strong> ${vistoria.observacoes}</p>` : ''}
+                            <button class="btn" onclick="editarVistoria(${vistoria.id})">Editar</button>
+                        </div>
+                    `;
+                });
+                content.innerHTML += '</div>';
+            }
+            
+            content.innerHTML += '<button class="btn btn-success" onclick="abrirModalNovaData(\'' + dataStr + '\')">Nova Vistoria neste Dia</button>';
+            
+            modal.style.display = 'block';
+        }
+
+        // Função para fechar modal de vistorias do dia
+        function fecharModalDia() {
+            document.getElementById('modalVistoriasDia').style.display = 'none';
+        }
+
+        // Função para abrir modal com data pré-selecionada
+        function abrirModalNovaData(data) {
+            fecharModalDia();
+            abrirModalNova();
+            document.getElementById('data_vistoria').value = data;
+        }
 
         // Função para carregar vistorias
         async function carregarVistorias() {
@@ -278,6 +626,7 @@
                 const response = await fetch('api/vistorias.php');
                 vistorias = await response.json();
                 exibirVistorias();
+                renderizarCalendario();
             } catch (error) {
                 console.error('Erro ao carregar vistorias:', error);
                 // Para demonstração, vamos usar dados locais se a API não estiver disponível
@@ -306,6 +655,7 @@
                     }
                 ];
                 exibirVistorias();
+                renderizarCalendario();
             }
         }
 
@@ -323,7 +673,7 @@
                     <td>${formatarData(vistoria.data_vistoria)}</td>
                     <td class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</td>
                     <td>
-                        <button class="btn" onclick="editarVistoria('${vistoria.id}')">Editar</button>
+                        <button class="btn" onclick="editarVistoria(${vistoria.id})">Editar</button>
                         <button class="btn btn-danger" onclick="excluirVistoria(${vistoria.id})">Excluir</button>
                     </td>
                 `;
@@ -352,6 +702,7 @@
 
         // Função para editar vistoria
         function editarVistoria(id) {
+            fecharModalDia(); // Fechar modal do dia se estiver aberto
             const vistoria = vistorias.find(v => v.id === id);
             if (vistoria) {
                 document.getElementById('modalTitulo').textContent = 'Editar Vistoria';
@@ -379,6 +730,7 @@
                     // Para demonstração, remover localmente
                     vistorias = vistorias.filter(v => v.id !== id);
                     exibirVistorias();
+                    renderizarCalendario();
                 }
             }
         }
@@ -451,6 +803,7 @@
                 }
                 fecharModal();
                 exibirVistorias();
+                renderizarCalendario();
             }
         });
 
@@ -458,6 +811,9 @@
         window.onclick = function(event) {
             if (event.target == document.getElementById('modalVistoria')) {
                 fecharModal();
+            }
+            if (event.target == document.getElementById('modalVistoriasDia')) {
+                fecharModalDia();
             }
         }
 
