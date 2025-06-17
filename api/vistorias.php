@@ -6,6 +6,7 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
 require_once '../config.php';
+require_once '../session.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -16,10 +17,27 @@ switch($method) {
             $stmt = $pdo->prepare("SELECT * FROM vistorias WHERE id = ?");
             $stmt->execute([$_GET['id']]);
             $vistoria = $stmt->fetch();
-            echo json_encode($vistoria);
+            
+            // Verificar permissão
+            if($vistoria && (isGestor() || $vistoria['vendedor'] === $_SESSION['usuario_nome'])) {
+                echo json_encode($vistoria);
+            } else {
+                http_response_code(403);
+                echo json_encode(['error' => 'Acesso negado']);
+            }
         } else {
-            // Listar todas as vistorias
-            $stmt = $pdo->query("SELECT * FROM vistorias ORDER BY data_vistoria DESC");
+            // Listar vistorias
+            if(isGestor()) {
+                // Gestor vê todas
+                $sql = "SELECT * FROM vistorias ORDER BY data_vistoria DESC";
+                $stmt = $pdo->query($sql);
+            } else {
+                // Vendedor vê apenas as suas
+                $sql = "SELECT * FROM vistorias WHERE vendedor = ? ORDER BY data_vistoria DESC";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$_SESSION['usuario_nome']]);
+            }
+            
             $vistorias = $stmt->fetchAll();
             echo json_encode($vistorias);
         }
@@ -28,6 +46,11 @@ switch($method) {
     case 'POST':
         // Criar nova vistoria
         $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Se não for gestor, forçar o vendedor a ser o usuário logado
+        if(!isGestor()) {
+            $data['vendedor'] = $_SESSION['usuario_nome'];
+        }
         
         $sql = "INSERT INTO vistorias (cliente, cpf, telefone, vendedor, endereco, tipo_imovel, data_vistoria, status, observacoes) 
                 VALUES (:cliente, :cpf, :telefone, :vendedor, :endereco, :tipo_imovel, :data_vistoria, :status, :observacoes)";
@@ -51,7 +74,30 @@ switch($method) {
     case 'PUT':
         // Atualizar vistoria
         if(isset($_GET['id'])) {
+            // Verificar permissão
+            $stmt = $pdo->prepare("SELECT * FROM vistorias WHERE id = ?");
+            $stmt->execute([$_GET['id']]);
+            $vistoriaAtual = $stmt->fetch();
+            
+            if(!$vistoriaAtual) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Vistoria não encontrada']);
+                break;
+            }
+            
+            // Verificar se tem permissão para editar
+            if(!isGestor() && $vistoriaAtual['vendedor'] !== $_SESSION['usuario_nome']) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Sem permissão para editar esta vistoria']);
+                break;
+            }
+            
             $data = json_decode(file_get_contents('php://input'), true);
+            
+            // Se não for gestor, manter o vendedor original
+            if(!isGestor()) {
+                $data['vendedor'] = $vistoriaAtual['vendedor'];
+            }
             
             $sql = "UPDATE vistorias SET 
                     cliente = :cliente,
@@ -84,7 +130,13 @@ switch($method) {
         break;
         
     case 'DELETE':
-        // Excluir vistoria
+        // Excluir vistoria (apenas gestor)
+        if(!isGestor()) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Apenas gestores podem excluir vistorias']);
+            break;
+        }
+        
         if(isset($_GET['id'])) {
             $stmt = $pdo->prepare("DELETE FROM vistorias WHERE id = ?");
             $stmt->execute([$_GET['id']]);

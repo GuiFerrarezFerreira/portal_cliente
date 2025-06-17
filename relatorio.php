@@ -1,4 +1,5 @@
 <?php
+require_once 'session.php';
 require_once 'config.php';
 
 $id = isset($_GET['id']) ? $_GET['id'] : 0;
@@ -8,6 +9,11 @@ $vistoria = $stmt->fetch();
 
 if(!$vistoria) {
     die("Vistoria não encontrada");
+}
+
+// Verificar permissão
+if(!isGestor() && $vistoria['vendedor'] !== $_SESSION['usuario_nome']) {
+    die("Você não tem permissão para visualizar este relatório");
 }
 ?>
 <!DOCTYPE html>
@@ -29,6 +35,10 @@ if(!$vistoria) {
             margin-bottom: 30px;
             border-bottom: 2px solid #333;
             padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
         }
         
         .info-section {
@@ -72,6 +82,13 @@ if(!$vistoria) {
             color: #666;
         }
         
+        .user-info {
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
         @media print {
             body {
                 margin: 0;
@@ -96,10 +113,52 @@ if(!$vistoria) {
         .btn-print:hover {
             background-color: #2980b9;
         }
+        
+        .btn-back {
+            background-color: #95a5a6;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            margin-left: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-back:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .status-pendente {
+            background-color: #f39c12;
+        }
+        
+        .status-concluída {
+            background-color: #27ae60;
+        }
+        
+        .status-cancelada {
+            background-color: #e74c3c;
+        }
     </style>
 </head>
 <body>
+    <div class="no-print user-info">
+        Gerado por: <?php echo htmlspecialchars($_SESSION['usuario_nome']); ?> (<?php echo ucfirst($_SESSION['usuario_tipo']); ?>)
+    </div>
+    
     <button class="btn-print no-print" onclick="window.print()">Imprimir Relatório</button>
+    <a href="index.php" class="btn-back no-print">Voltar ao Sistema</a>
     
     <div class="header">
         <h1>Relatório de Vistoria</h1>
@@ -146,7 +205,10 @@ if(!$vistoria) {
                 <strong>Data da Vistoria:</strong> <?php echo date('d/m/Y H:i', strtotime($vistoria['data_vistoria'])); ?>
             </div>
             <div class="info-item">
-                <strong>Status:</strong> <?php echo htmlspecialchars($vistoria['status']); ?>
+                <strong>Status:</strong> 
+                <span class="status-badge status-<?php echo strtolower($vistoria['status']); ?>">
+                    <?php echo htmlspecialchars($vistoria['status']); ?>
+                </span>
             </div>
             <div class="info-item">
                 <strong>Data de Criação:</strong> <?php echo date('d/m/Y H:i', strtotime($vistoria['data_criacao'])); ?>
@@ -163,6 +225,7 @@ if(!$vistoria) {
     
     <div class="footer">
         <p>Sistema de Vistoria - Relatório gerado automaticamente</p>
+        <p>Este documento é confidencial e de uso exclusivo da empresa</p>
     </div>
 </body>
 </html>
