@@ -143,7 +143,7 @@ if(!$vistoria) {
                 <strong>Código:</strong> #<?php echo $vistoria['id']; ?>
             </div>
             <div class="info-item">
-                <strong>Data da Vistoria:</strong> <?php echo date('d/m/Y', strtotime($vistoria['data_vistoria'])); ?>
+                <strong>Data da Vistoria:</strong> <?php echo date('d/m/Y H:i', strtotime($vistoria['data_vistoria'])); ?>
             </div>
             <div class="info-item">
                 <strong>Status:</strong> <?php echo htmlspecialchars($vistoria['status']); ?>
