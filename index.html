@@ -470,6 +470,41 @@
                        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+        // Função para normalizar datas
+        function normalizarData(data) {
+            if (!data) return null;
+            
+            // Se for uma string datetime-local ou com hora
+            if (typeof data === 'string' && data.includes('T')) {
+                return data.split('T')[0];
+            }
+            
+            // Se já for uma string no formato yyyy-mm-dd
+            if (typeof data === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data)) {
+                return data;
+            }
+            
+            // Para outros casos, tenta converter
+            const dataObj = new Date(data);
+            if (!isNaN(dataObj)) {
+                const ano = dataObj.getFullYear();
+                const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+                const dia = String(dataObj.getDate()).padStart(2, '0');
+                return `${ano}-${mes}-${dia}`;
+            }
+            
+            return data;
+        }
+
+
+        // Função para mostrar data com horas
+        function dataHoras(data) {
+            const [dvist, horario] = data.split(' ');
+            const [ano, mes, dia] = dvist.split('-');
+            const [h1, h2, h3] = horario.split(':');            
+            return `${dia}/${mes}/${ano} ás ${h1}:${h2}`;
+        }
+
         // Função para mostrar aba
         function mostrarAba(aba) {
             // Remove active de todas as abas
@@ -534,7 +569,7 @@
                 
                 // Verificar vistorias neste dia
                 const dataStr = `${anoAtual}-${String(mesAtual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-                const vistoriasDia = vistorias.filter(v => v.data_vistoria === dataStr);
+                const vistoriasDia = vistorias.filter(v => normalizarData(v.data_vistoria) === dataStr);
                 
                 if (vistoriasDia.length > 0) {
                     diaElement.classList.add('has-vistoria');
@@ -576,7 +611,7 @@
         // Função para mostrar vistorias do dia
         function mostrarVistoriasDia(dia, mes, ano) {
             const dataStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-            const vistoriasDia = vistorias.filter(v => v.data_vistoria === dataStr);
+            const vistoriasDia = vistorias.filter(v => normalizarData(v.data_vistoria) === dataStr);
             
             const modal = document.getElementById('modalVistoriasDia');
             const titulo = document.getElementById('modalDiaTitulo');
@@ -593,6 +628,7 @@
                         <div class="vistoria-item status-${vistoria.status.toLowerCase()}">
                             <h4>${vistoria.cliente}</h4>
                             <p><strong>Endereço:</strong> ${vistoria.endereco}</p>
+                            <p><strong>Data:</strong> ${vistoria.data_vistoria2}</p>                        
                             <p><strong>Tipo:</strong> ${vistoria.tipo_imovel}</p>
                             <p><strong>Status:</strong> <span class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</span></p>
                             ${vistoria.observacoes ? `<p><strong>Observações:</strong> ${vistoria.observacoes}</p>` : ''}
@@ -624,7 +660,17 @@
         async function carregarVistorias() {
             try {
                 const response = await fetch('api/vistorias.php');
-                vistorias = await response.json();
+                const vistoriasRaw = await response.json();
+                
+                //Data com horas
+
+                // Normalizar as datas ao carregar
+                vistorias = vistoriasRaw.map(vistoria => ({
+                    ...vistoria,
+                    data_vistoria: normalizarData(vistoria.data_vistoria),
+                    data_vistoria2: dataHoras(vistoria.data_vistoria),                    
+                }));
+                
                 exibirVistorias();
                 renderizarCalendario();
             } catch (error) {
@@ -670,7 +716,7 @@
                     <td>${vistoria.id}</td>
                     <td>${vistoria.cliente}</td>
                     <td>${vistoria.endereco}</td>
-                    <td>${formatarData(vistoria.data_vistoria)}</td>
+                    <td>${vistoria.data_vistoria2}</td>
                     <td class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</td>
                     <td>
                         <button class="btn" onclick="editarVistoria('${vistoria.id}')">Editar</button>
@@ -703,7 +749,7 @@
         // Função para editar vistoria
         function editarVistoria(id) {
             fecharModalDia(); // Fechar modal do dia se estiver aberto
-            const vistoria = vistorias.find(v => v.id === id);
+            const vistoria = vistorias.find(v => v.id == id);
             if (vistoria) {
                 document.getElementById('modalTitulo').textContent = 'Editar Vistoria';
                 document.getElementById('vistoriaId').value = vistoria.id;
