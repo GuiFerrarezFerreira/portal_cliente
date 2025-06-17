@@ -66,6 +66,19 @@
             background-color: #229954;
         }
 
+        .btn-info {
+            background-color: #9b59b6;
+        }
+
+        .btn-info:hover {
+            background-color: #8e44ad;
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
         .form-group {
             margin-bottom: 15px;
         }
@@ -327,6 +340,12 @@
         .tab-content.active {
             display: block;
         }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
 <body>
@@ -514,6 +533,11 @@
             return `${dia}/${mes}/${ano} às ${h1}:${h2}`;
         }
 
+        // Função para visualizar relatório
+        function visualizarRelatorio(id) {
+            window.open(`relatorio.php?id=${id}`, '_blank');
+        }
+
         // Função para carregar vendedores
         async function carregarVendedores() {
             try {
@@ -678,7 +702,10 @@
                             <p><strong>Tipo:</strong> ${vistoria.tipo_imovel}</p>
                             <p><strong>Status:</strong> <span class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</span></p>
                             ${vistoria.observacoes ? `<p><strong>Observações:</strong> ${vistoria.observacoes}</p>` : ''}
-                            <button class="btn" onclick="editarVistoria('${vistoria.id}')">Editar</button>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm" onclick="editarVistoria('${vistoria.id}')">Editar</button>
+                                <button class="btn btn-sm btn-info" onclick="visualizarRelatorio(${vistoria.id})">Relatório</button>
+                            </div>
                         </div>
                     `;
                 });
@@ -770,8 +797,11 @@
                     <td>${vistoria.data_vistoria2}</td>
                     <td class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</td>
                     <td>
-                        <button class="btn" onclick="editarVistoria('${vistoria.id}')">Editar</button>
-                        <button class="btn btn-danger" onclick="excluirVistoria(${vistoria.id})">Excluir</button>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm" onclick="editarVistoria('${vistoria.id}')">Editar</button>
+                            <button class="btn btn-sm btn-info" onclick="visualizarRelatorio(${vistoria.id})">Relatório</button>
+                            <button class="btn btn-sm btn-danger" onclick="excluirVistoria(${vistoria.id})">Excluir</button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
