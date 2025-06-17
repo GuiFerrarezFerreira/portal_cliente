@@ -29,14 +29,15 @@ switch($method) {
         // Criar nova vistoria
         $data = json_decode(file_get_contents('php://input'), true);
         
-        $sql = "INSERT INTO vistorias (cliente, cpf, telefone, endereco, tipo_imovel, data_vistoria, status, observacoes) 
-                VALUES (:cliente, :cpf, :telefone, :endereco, :tipo_imovel, :data_vistoria, :status, :observacoes)";
+        $sql = "INSERT INTO vistorias (cliente, cpf, telefone, vendedor, endereco, tipo_imovel, data_vistoria, status, observacoes) 
+                VALUES (:cliente, :cpf, :telefone, :vendedor, :endereco, :tipo_imovel, :data_vistoria, :status, :observacoes)";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':cliente' => $data['cliente'],
             ':cpf' => $data['cpf'],
             ':telefone' => $data['telefone'],
+            ':vendedor' => $data['vendedor'],
             ':endereco' => $data['endereco'],
             ':tipo_imovel' => $data['tipo_imovel'],
             ':data_vistoria' => $data['data_vistoria'],
@@ -56,6 +57,7 @@ switch($method) {
                     cliente = :cliente,
                     cpf = :cpf,
                     telefone = :telefone,
+                    vendedor = :vendedor,
                     endereco = :endereco,
                     tipo_imovel = :tipo_imovel,
                     data_vistoria = :data_vistoria,
@@ -68,6 +70,7 @@ switch($method) {
                 ':cliente' => $data['cliente'],
                 ':cpf' => $data['cpf'],
                 ':telefone' => $data['telefone'],
+                ':vendedor' => $data['vendedor'],
                 ':endereco' => $data['endereco'],
                 ':tipo_imovel' => $data['tipo_imovel'],
                 ':data_vistoria' => $data['data_vistoria'],

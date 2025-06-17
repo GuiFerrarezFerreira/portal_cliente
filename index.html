@@ -369,6 +369,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Cliente</th>
+                            <th>Vendedor</th>
                             <th>Imóvel</th>
                             <th>Data</th>
                             <th>Status</th>
@@ -405,6 +406,11 @@
                 <div class="form-group">
                     <label for="telefone">Telefone:</label>
                     <input type="text" id="telefone" name="telefone" maxlength="15" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="vendedor">Vendedor:</label>
+                    <input type="text" id="vendedor" name="vendedor" required>
                 </div>
                 
                 <div class="form-group">
@@ -496,13 +502,12 @@
             return data;
         }
 
-
         // Função para mostrar data com horas
         function dataHoras(data) {
             const [dvist, horario] = data.split(' ');
             const [ano, mes, dia] = dvist.split('-');
             const [h1, h2, h3] = horario.split(':');            
-            return `${dia}/${mes}/${ano} ás ${h1}:${h2}`;
+            return `${dia}/${mes}/${ano} às ${h1}:${h2}`;
         }
 
         // Função para mostrar aba
@@ -627,6 +632,7 @@
                     content.innerHTML += `
                         <div class="vistoria-item status-${vistoria.status.toLowerCase()}">
                             <h4>${vistoria.cliente}</h4>
+                            <p><strong>Vendedor:</strong> ${vistoria.vendedor || 'Não informado'}</p>
                             <p><strong>Endereço:</strong> ${vistoria.endereco}</p>
                             <p><strong>Data:</strong> ${vistoria.data_vistoria2}</p>                        
                             <p><strong>Tipo:</strong> ${vistoria.tipo_imovel}</p>
@@ -662,8 +668,6 @@
                 const response = await fetch('api/vistorias.php');
                 const vistoriasRaw = await response.json();
                 
-                //Data com horas
-
                 // Normalizar as datas ao carregar
                 vistorias = vistoriasRaw.map(vistoria => ({
                     ...vistoria,
@@ -682,6 +686,7 @@
                         cliente: 'João Silva',
                         cpf: '123.456.789-00',
                         telefone: '(11) 98765-4321',
+                        vendedor: 'Carlos Silva',
                         endereco: 'Rua das Flores, 123',
                         tipo_imovel: 'Casa',
                         data_vistoria: '2024-01-15',
@@ -693,6 +698,7 @@
                         cliente: 'Maria Santos',
                         cpf: '987.654.321-00',
                         telefone: '(11) 91234-5678',
+                        vendedor: 'Ana Santos',
                         endereco: 'Av. Principal, 456',
                         tipo_imovel: 'Apartamento',
                         data_vistoria: '2024-01-20',
@@ -715,6 +721,7 @@
                 tr.innerHTML = `
                     <td>${vistoria.id}</td>
                     <td>${vistoria.cliente}</td>
+                    <td>${vistoria.vendedor || 'Não informado'}</td>
                     <td>${vistoria.endereco}</td>
                     <td>${vistoria.data_vistoria2}</td>
                     <td class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</td>
@@ -756,6 +763,7 @@
                 document.getElementById('cliente').value = vistoria.cliente;
                 document.getElementById('cpf').value = vistoria.cpf;
                 document.getElementById('telefone').value = vistoria.telefone;
+                document.getElementById('vendedor').value = vistoria.vendedor || '';
                 document.getElementById('endereco').value = vistoria.endereco;
                 document.getElementById('tipo_imovel').value = vistoria.tipo_imovel;
                 document.getElementById('data_vistoria').value = vistoria.data_vistoria;
@@ -810,6 +818,7 @@
                 cliente: formData.get('cliente'),
                 cpf: formData.get('cpf'),
                 telefone: formData.get('telefone'),
+                vendedor: formData.get('vendedor'),
                 endereco: formData.get('endereco'),
                 tipo_imovel: formData.get('tipo_imovel'),
                 data_vistoria: formData.get('data_vistoria'),

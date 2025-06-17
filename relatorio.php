@@ -118,6 +118,9 @@ if(!$vistoria) {
             <div class="info-item">
                 <strong>Telefone:</strong> <?php echo htmlspecialchars($vistoria['telefone']); ?>
             </div>
+            <div class="info-item">
+                <strong>Vendedor:</strong> <?php echo htmlspecialchars($vistoria['vendedor'] ?: 'Não informado'); ?>
+            </div>
         </div>
     </div>
     
