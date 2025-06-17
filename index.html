@@ -596,7 +596,7 @@
                             <p><strong>Tipo:</strong> ${vistoria.tipo_imovel}</p>
                             <p><strong>Status:</strong> <span class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</span></p>
                             ${vistoria.observacoes ? `<p><strong>Observações:</strong> ${vistoria.observacoes}</p>` : ''}
-                            <button class="btn" onclick="editarVistoria(${vistoria.id})">Editar</button>
+                            <button class="btn" onclick="editarVistoria('${vistoria.id}')">Editar</button>
                         </div>
                     `;
                 });
@@ -673,7 +673,7 @@
                     <td>${formatarData(vistoria.data_vistoria)}</td>
                     <td class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</td>
                     <td>
-                        <button class="btn" onclick="editarVistoria(${vistoria.id})">Editar</button>
+                        <button class="btn" onclick="editarVistoria('${vistoria.id}')">Editar</button>
                         <button class="btn btn-danger" onclick="excluirVistoria(${vistoria.id})">Excluir</button>
                     </td>
                 `;
