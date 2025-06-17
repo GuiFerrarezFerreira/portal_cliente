@@ -410,7 +410,10 @@
                 
                 <div class="form-group">
                     <label for="vendedor">Vendedor:</label>
-                    <input type="text" id="vendedor" name="vendedor" required>
+                    <select id="vendedor" name="vendedor" required>
+                        <option value="">Selecione um vendedor...</option>
+                        <!-- Vendedores serão carregados aqui -->
+                    </select>
                 </div>
                 
                 <div class="form-group">
@@ -469,6 +472,7 @@
     <script>
         // Variáveis globais
         let vistorias = [];
+        let vendedores = [];
         let mesAtual = new Date().getMonth();
         let anoAtual = new Date().getFullYear();
 
@@ -508,6 +512,42 @@
             const [ano, mes, dia] = dvist.split('-');
             const [h1, h2, h3] = horario.split(':');            
             return `${dia}/${mes}/${ano} às ${h1}:${h2}`;
+        }
+
+        // Função para carregar vendedores
+        async function carregarVendedores() {
+            try {
+                const response = await fetch('api/vendedores.php?ativos=1');
+                vendedores = await response.json();
+                
+                const selectVendedor = document.getElementById('vendedor');
+                selectVendedor.innerHTML = '<option value="">Selecione um vendedor...</option>';
+                
+                vendedores.forEach(vendedor => {
+                    const option = document.createElement('option');
+                    option.value = vendedor.nome;
+                    option.textContent = vendedor.nome;
+                    selectVendedor.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar vendedores:', error);
+                // Para demonstração, adicionar vendedores padrão
+                vendedores = [
+                    { id: 1, nome: 'Carlos Silva', email: 'carlos@email.com', telefone: '(11) 98765-4321', ativo: 1 },
+                    { id: 2, nome: 'Ana Santos', email: 'ana@email.com', telefone: '(11) 91234-5678', ativo: 1 },
+                    { id: 3, nome: 'Pedro Oliveira', email: 'pedro@email.com', telefone: '(11) 95555-5555', ativo: 1 }
+                ];
+                
+                const selectVendedor = document.getElementById('vendedor');
+                selectVendedor.innerHTML = '<option value="">Selecione um vendedor...</option>';
+                
+                vendedores.forEach(vendedor => {
+                    const option = document.createElement('option');
+                    option.value = vendedor.nome;
+                    option.textContent = vendedor.nome;
+                    selectVendedor.appendChild(option);
+                });
+            }
         }
 
         // Função para mostrar aba
@@ -689,7 +729,7 @@
                         vendedor: 'Carlos Silva',
                         endereco: 'Rua das Flores, 123',
                         tipo_imovel: 'Casa',
-                        data_vistoria: '2024-01-15',
+                        data_vistoria: '2025-06-15 10:00:00',
                         status: 'Concluída',
                         observacoes: 'Vistoria realizada sem problemas'
                     },
@@ -701,11 +741,15 @@
                         vendedor: 'Ana Santos',
                         endereco: 'Av. Principal, 456',
                         tipo_imovel: 'Apartamento',
-                        data_vistoria: '2024-01-20',
+                        data_vistoria: '2025-06-20 14:30:00',
                         status: 'Pendente',
                         observacoes: 'Aguardando confirmação do cliente'
                     }
-                ];
+                ].map(vistoria => ({
+                    ...vistoria,
+                    data_vistoria: normalizarData(vistoria.data_vistoria),
+                    data_vistoria2: dataHoras(vistoria.data_vistoria),                    
+                }));
                 exibirVistorias();
                 renderizarCalendario();
             }
@@ -746,6 +790,9 @@
             document.getElementById('formVistoria').reset();
             document.getElementById('vistoriaId').value = '';
             document.getElementById('modalVistoria').style.display = 'block';
+            
+            // Carregar vendedores ao abrir o modal
+            carregarVendedores();
         }
 
         // Função para fechar modal
@@ -758,18 +805,32 @@
             fecharModalDia(); // Fechar modal do dia se estiver aberto
             const vistoria = vistorias.find(v => v.id == id);
             if (vistoria) {
-                document.getElementById('modalTitulo').textContent = 'Editar Vistoria';
-                document.getElementById('vistoriaId').value = vistoria.id;
-                document.getElementById('cliente').value = vistoria.cliente;
-                document.getElementById('cpf').value = vistoria.cpf;
-                document.getElementById('telefone').value = vistoria.telefone;
-                document.getElementById('vendedor').value = vistoria.vendedor || '';
-                document.getElementById('endereco').value = vistoria.endereco;
-                document.getElementById('tipo_imovel').value = vistoria.tipo_imovel;
-                document.getElementById('data_vistoria').value = vistoria.data_vistoria;
-                document.getElementById('status').value = vistoria.status;
-                document.getElementById('observacoes').value = vistoria.observacoes;
-                document.getElementById('modalVistoria').style.display = 'block';
+                // Carregar vendedores primeiro
+                carregarVendedores().then(() => {
+                    document.getElementById('modalTitulo').textContent = 'Editar Vistoria';
+                    document.getElementById('vistoriaId').value = vistoria.id;
+                    document.getElementById('cliente').value = vistoria.cliente;
+                    document.getElementById('cpf').value = vistoria.cpf;
+                    document.getElementById('telefone').value = vistoria.telefone;
+                    document.getElementById('vendedor').value = vistoria.vendedor || '';
+                    document.getElementById('endereco').value = vistoria.endereco;
+                    document.getElementById('tipo_imovel').value = vistoria.tipo_imovel;
+                    
+                    // Converter data para formato datetime-local
+                    const dataOriginal = vistoria.data_vistoria;
+                    if (dataOriginal) {
+                        // Se não tiver hora, adicionar 00:00
+                        if (!dataOriginal.includes('T') && !dataOriginal.includes(' ')) {
+                            document.getElementById('data_vistoria').value = dataOriginal + 'T00:00';
+                        } else {
+                            document.getElementById('data_vistoria').value = dataOriginal.replace(' ', 'T');
+                        }
+                    }
+                    
+                    document.getElementById('status').value = vistoria.status;
+                    document.getElementById('observacoes').value = vistoria.observacoes;
+                    document.getElementById('modalVistoria').style.display = 'block';
+                });
             }
         }
 
@@ -872,8 +933,9 @@
             }
         }
 
-        // Carregar vistorias ao iniciar
+        // Carregar dados ao iniciar
         carregarVistorias();
+        carregarVendedores();
     </script>
 </body>
 </html>
