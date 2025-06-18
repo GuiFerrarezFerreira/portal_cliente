@@ -104,6 +104,14 @@ require_once 'session.php';
             background-color: #e67e22;
         }
 
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
         .btn-sm {
             padding: 5px 10px;
             font-size: 12px;
@@ -126,7 +134,8 @@ require_once 'session.php';
 
         input[type="text"],
         input[type="email"],
-        input[type="password"],                
+        input[type="password"],
+        input[type="number"],                
         input[type="datetime-local"],
         select,
         textarea {
@@ -208,19 +217,58 @@ require_once 'session.php';
             color: #000;
         }
 
-        .status-pendente {
-            color: #f39c12;
+        /* Status badges */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
             font-weight: bold;
+            display: inline-block;
+        }
+
+        .status-pendente {
+            background-color: #f39c12;
+            color: white;
         }
 
         .status-concluída {
-            color: #27ae60;
-            font-weight: bold;
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .status-enviada_cotacao {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .status-cotacao_aprovada {
+            background-color: #9b59b6;
+            color: white;
+        }
+
+        .status-proposta_enviada {
+            background-color: #e67e22;
+            color: white;
+        }
+
+        .status-proposta_aceita {
+            background-color: #16a085;
+            color: white;
+        }
+
+        .status-em_andamento {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .status-finalizada {
+            background-color: #34495e;
+            color: white;
         }
 
         .status-cancelada {
-            color: #e74c3c;
-            font-weight: bold;
+            background-color: #e74c3c;
+            color: white;
         }
 
         /* Estilos do Calendário */
@@ -334,18 +382,6 @@ require_once 'session.php';
             border-left: 4px solid #3498db;
         }
 
-        .vistoria-item.status-pendente {
-            border-left-color: #f39c12;
-        }
-
-        .vistoria-item.status-concluída {
-            border-left-color: #27ae60;
-        }
-
-        .vistoria-item.status-cancelada {
-            border-left-color: #e74c3c;
-        }
-
         .tabs {
             display: flex;
             gap: 10px;
@@ -391,6 +427,82 @@ require_once 'session.php';
             padding: 12px;
             border-radius: 5px;
             margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .file-info {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .upload-area:hover {
+            border-color: #3498db;
+            background-color: #f8f9fa;
+        }
+
+        /* Status info cards */
+        .status-info-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .status-info-card h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .status-info-card p {
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -514,6 +626,11 @@ require_once 'session.php';
                     <label for="telefone">Telefone:</label>
                     <input type="text" id="telefone" name="telefone" maxlength="15" required>
                 </div>
+
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email">
+                </div>
                 
                 <div class="form-group">
                     <label for="vendedor">Vendedor:</label>
@@ -565,6 +682,82 @@ require_once 'session.php';
                 
                 <button type="submit" class="btn btn-success">Salvar</button>
                 <button type="button" class="btn btn-danger" onclick="fecharModal()">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Upload de Lista de Seguro -->
+    <div id="modalUpload" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fecharModalUpload()">&times;</span>
+            <h2>Upload de Lista de Seguro</h2>
+            
+            <div id="uploadInfo"></div>
+            
+            <div class="upload-area" id="uploadArea">
+                <p>Arraste o arquivo aqui ou clique para selecionar</p>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" style="display: none;">
+            </div>
+            
+            <div id="filePreview" style="display: none;">
+                <div class="file-info">
+                    <span id="fileName"></span>
+                    <button class="btn btn-sm btn-danger" onclick="removerArquivo()">Remover</button>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn btn-success" onclick="fazerUpload()">Enviar Arquivo</button>
+                <button class="btn btn-secondary" onclick="fecharModalUpload()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Cotação -->
+    <div id="modalCotacao" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fecharModalCotacao()">&times;</span>
+            <h2>Status da Cotação</h2>
+            
+            <div id="cotacaoContent">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Proposta -->
+    <div id="modalProposta" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fecharModalProposta()">&times;</span>
+            <h2>Criar Proposta</h2>
+            
+            <form id="formProposta">
+                <input type="hidden" id="propostaVistoriaId" value="">
+                
+                <div class="form-group">
+                    <label for="valorTotal">Valor Total (R$):</label>
+                    <input type="number" id="valorTotal" name="valor_total" step="0.01" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="descricaoServicos">Descrição dos Serviços:</label>
+                    <textarea id="descricaoServicos" name="descricao_servicos" rows="6" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="validadeDias">Validade da Proposta (dias):</label>
+                    <input type="number" id="validadeDias" name="validade_dias" value="30" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="enviarEmail" name="enviar_email" checked>
+                        Enviar proposta por email ao cliente
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Criar e Enviar Proposta</button>
+                <button type="button" class="btn btn-secondary" onclick="fecharModalProposta()">Cancelar</button>
             </form>
         </div>
     </div>
@@ -633,10 +826,25 @@ require_once 'session.php';
         const usuarioTipo = '<?php echo $usuario_tipo; ?>';
         const usuarioNome = '<?php echo $usuario_nome; ?>';
         const isGestor = <?php echo isGestor() ? 'true' : 'false'; ?>;
+        let arquivoSelecionado = null;
+        let vistoriaAtualUpload = null;
 
         const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+        // Mapeamento de status
+        const statusDisplay = {
+            'Pendente': 'Pendente',
+            'Concluída': 'Concluída',
+            'Enviada_Cotacao': 'Enviada para Cotação',
+            'Cotacao_Aprovada': 'Cotação Aprovada',
+            'Proposta_Enviada': 'Proposta Enviada',
+            'Proposta_Aceita': 'Proposta Aceita',
+            'Em_Andamento': 'Em Andamento',
+            'Finalizada': 'Finalizada',
+            'Cancelada': 'Cancelada'
+        };
 
         // Função para normalizar datas
         function normalizarData(data) {
@@ -961,18 +1169,20 @@ require_once 'session.php';
                 content.innerHTML = '<div class="vistorias-dia-list">';
                 vistoriasDia.forEach(vistoria => {
                     const podeEditar = isGestor || (vistoria.vendedor === usuarioNome);
+                    const statusClass = vistoria.status.toLowerCase().replace('_', '');
                     content.innerHTML += `
-                        <div class="vistoria-item status-${vistoria.status.toLowerCase()}">
+                        <div class="vistoria-item">
                             <h4>${vistoria.cliente}</h4>
                             <p><strong>Vendedor:</strong> ${vistoria.vendedor || 'Não informado'}</p>
                             <p><strong>Endereço:</strong> ${vistoria.endereco}</p>
                             <p><strong>Data:</strong> ${vistoria.data_vistoria2}</p>                        
                             <p><strong>Tipo:</strong> ${vistoria.tipo_imovel}</p>
-                            <p><strong>Status:</strong> <span class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</span></p>
+                            <p><strong>Status:</strong> <span class="status-badge status-${statusClass}">${statusDisplay[vistoria.status] || vistoria.status}</span></p>
                             ${vistoria.observacoes ? `<p><strong>Observações:</strong> ${vistoria.observacoes}</p>` : ''}
                             <div class="action-buttons">
                                 ${podeEditar ? `<button class="btn btn-sm" onclick="editarVistoria('${vistoria.id}')">Editar</button>` : ''}
                                 <button class="btn btn-sm btn-info" onclick="visualizarRelatorio(${vistoria.id})">Relatório</button>
+                                ${renderizarBotoesAcao(vistoria)}
                             </div>
                         </div>
                     `;
@@ -1000,8 +1210,7 @@ require_once 'session.php';
         // Função para carregar vistorias
         async function carregarVistorias() {
             try {
-                const filtro = isGestor ? '' : `?vendedor=${encodeURIComponent(usuarioNome)}`;
-                const response = await fetch(`api/vistorias.php${filtro}`);
+                const response = await fetch('api/vistorias.php');
                 const vistoriasRaw = await response.json();
                 
                 // Normalizar as datas ao carregar
@@ -1018,15 +1227,58 @@ require_once 'session.php';
             }
         }
 
+        // Função para renderizar botões de ação baseado no status
+        function renderizarBotoesAcao(vistoria) {
+            let botoes = '';
+            const podeEditar = isGestor || (vistoria.vendedor === usuarioNome);
+            
+            switch(vistoria.status) {
+                case 'Concluída':
+                    if (podeEditar) {
+                        if (vistoria.arquivo_lista_seguro) {
+                            botoes += `<button class="btn btn-sm btn-secondary" onclick="abrirModalUpload(${vistoria.id})">Ver Arquivo</button>`;
+                            botoes += `<button class="btn btn-sm btn-warning" onclick="enviarParaCotacao(${vistoria.id})">Enviar para Cotação</button>`;
+                        } else {
+                            botoes += `<button class="btn btn-sm btn-warning" onclick="abrirModalUpload(${vistoria.id})">Anexar Lista Seguro</button>`;
+                        }
+                    }
+                    break;
+                    
+                case 'Enviada_Cotacao':
+                    botoes += `<button class="btn btn-sm btn-info" onclick="verStatusCotacao(${vistoria.id})">Ver Cotação</button>`;
+                    break;
+                    
+                case 'Cotacao_Aprovada':
+                    if (podeEditar) {
+                        botoes += `<button class="btn btn-sm btn-success" onclick="criarProposta(${vistoria.id})">Criar Proposta</button>`;
+                    }
+                    break;
+                    
+                case 'Proposta_Enviada':
+                    botoes += `<button class="btn btn-sm btn-info" onclick="verProposta(${vistoria.id})">Ver Proposta</button>`;
+                    break;
+                    
+                case 'Proposta_Aceita':
+                case 'Em_Andamento':
+                case 'Finalizada':
+                    botoes += `<button class="btn btn-sm btn-secondary" onclick="verDetalhes(${vistoria.id})">Ver Detalhes</button>`;
+                    break;
+            }
+            
+            if (isGestor) {
+                botoes += `<button class="btn btn-sm btn-danger" onclick="excluirVistoria(${vistoria.id})">Excluir</button>`;
+            }
+            
+            return botoes;
+        }
+
         // Função para exibir vistorias na tabela
         function exibirVistorias() {
             const tbody = document.getElementById('listaVistorias');
             tbody.innerHTML = '';
             
             vistorias.forEach(vistoria => {
-                const podeEditar = isGestor || (vistoria.vendedor === usuarioNome);
-                const podeExcluir = isGestor;
-                
+                const statusClass = vistoria.status.toLowerCase().replace('_', '');
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${vistoria.id}</td>
@@ -1034,12 +1286,10 @@ require_once 'session.php';
                     <td>${vistoria.vendedor || 'Não informado'}</td>
                     <td>${vistoria.endereco}</td>
                     <td>${vistoria.data_vistoria2}</td>
-                    <td class="status-${vistoria.status.toLowerCase()}">${vistoria.status}</td>
+                    <td><span class="status-badge status-${statusClass}">${statusDisplay[vistoria.status] || vistoria.status}</span></td>
                     <td>
                         <div class="action-buttons">
-                            ${podeEditar ? `<button class="btn btn-sm" onclick="editarVistoria('${vistoria.id}')">Editar</button>` : ''}
-                            <button class="btn btn-sm btn-info" onclick="visualizarRelatorio(${vistoria.id})">Relatório</button>
-                            ${podeExcluir ? `<button class="btn btn-sm btn-danger" onclick="excluirVistoria(${vistoria.id})">Excluir</button>` : ''}
+                            ${renderizarBotoesAcao(vistoria)}
                         </div>
                     </td>
                 `;
@@ -1089,6 +1339,7 @@ require_once 'session.php';
                     document.getElementById('cliente').value = vistoria.cliente;
                     document.getElementById('cpf').value = vistoria.cpf;
                     document.getElementById('telefone').value = vistoria.telefone;
+                    document.getElementById('email').value = vistoria.email || '';
                     document.getElementById('vendedor').value = vistoria.vendedor || '';
                     document.getElementById('endereco').value = vistoria.endereco;
                     document.getElementById('tipo_imovel').value = vistoria.tipo_imovel;
@@ -1104,8 +1355,23 @@ require_once 'session.php';
                         }
                     }
                     
-                    document.getElementById('status').value = vistoria.status;
-                    document.getElementById('observacoes').value = vistoria.observacoes;
+                    // Limitar opções de status baseado no status atual
+                    const selectStatus = document.getElementById('status');
+                    selectStatus.innerHTML = '';
+                    
+                    if (['Pendente', 'Concluída', 'Cancelada'].includes(vistoria.status)) {
+                        selectStatus.innerHTML = `
+                            <option value="Pendente" ${vistoria.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                            <option value="Concluída" ${vistoria.status === 'Concluída' ? 'selected' : ''}>Concluída</option>
+                            <option value="Cancelada" ${vistoria.status === 'Cancelada' ? 'selected' : ''}>Cancelada</option>
+                        `;
+                    } else {
+                        // Status avançados não podem ser alterados manualmente
+                        selectStatus.innerHTML = `<option value="${vistoria.status}" selected>${statusDisplay[vistoria.status] || vistoria.status}</option>`;
+                        selectStatus.disabled = true;
+                    }
+                    
+                    document.getElementById('observacoes').value = vistoria.observacoes || '';
                     document.getElementById('modalVistoria').style.display = 'block';
                 };
                 
@@ -1134,7 +1400,312 @@ require_once 'session.php';
             }
         }
 
-        // Máscara para CPF
+        // Funções de Upload
+        function abrirModalUpload(vistoriaId) {
+            vistoriaAtualUpload = vistoriaId;
+            const vistoria = vistorias.find(v => v.id == vistoriaId);
+            
+            if (!vistoria) return;
+            
+            const uploadInfo = document.getElementById('uploadInfo');
+            uploadInfo.innerHTML = `
+                <div class="alert-info">
+                    <strong>Vistoria:</strong> #${vistoria.id} - ${vistoria.cliente}<br>
+                    <strong>Status:</strong> ${statusDisplay[vistoria.status]}
+                </div>
+            `;
+            
+            // Verificar se já tem arquivo
+            if (vistoria.arquivo_lista_seguro) {
+                document.getElementById('uploadArea').style.display = 'none';
+                document.getElementById('filePreview').style.display = 'block';
+                document.getElementById('fileName').textContent = vistoria.arquivo_lista_seguro;
+            } else {
+                document.getElementById('uploadArea').style.display = 'block';
+                document.getElementById('filePreview').style.display = 'none';
+            }
+            
+            document.getElementById('modalUpload').style.display = 'block';
+        }
+        
+        function fecharModalUpload() {
+            document.getElementById('modalUpload').style.display = 'none';
+            vistoriaAtualUpload = null;
+            arquivoSelecionado = null;
+            document.getElementById('fileInput').value = '';
+        }
+        
+        // Setup do upload
+        document.getElementById('uploadArea').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+        
+        document.getElementById('uploadArea').addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.currentTarget.style.backgroundColor = '#f0f0f0';
+        });
+        
+        document.getElementById('uploadArea').addEventListener('dragleave', (e) => {
+            e.currentTarget.style.backgroundColor = '';
+        });
+        
+        document.getElementById('uploadArea').addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.currentTarget.style.backgroundColor = '';
+            
+            if (e.dataTransfer.files.length > 0) {
+                arquivoSelecionado = e.dataTransfer.files[0];
+                mostrarPreviewArquivo();
+            }
+        });
+        
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                arquivoSelecionado = e.target.files[0];
+                mostrarPreviewArquivo();
+            }
+        });
+        
+        function mostrarPreviewArquivo() {
+            if (!arquivoSelecionado) return;
+            
+            document.getElementById('uploadArea').style.display = 'none';
+            document.getElementById('filePreview').style.display = 'block';
+            document.getElementById('fileName').textContent = arquivoSelecionado.name;
+        }
+        
+        async function fazerUpload() {
+            if (!arquivoSelecionado || !vistoriaAtualUpload) {
+                alert('Selecione um arquivo primeiro');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('arquivo', arquivoSelecionado);
+            formData.append('vistoria_id', vistoriaAtualUpload);
+            
+            try {
+                const response = await fetch('api/upload.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Arquivo enviado com sucesso!');
+                    fecharModalUpload();
+                    carregarVistorias();
+                } else {
+                    alert('Erro ao enviar arquivo: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Erro ao fazer upload:', error);
+                alert('Erro ao enviar arquivo');
+            }
+        }
+        
+        async function removerArquivo() {
+            if (!vistoriaAtualUpload) return;
+            
+            if (confirm('Tem certeza que deseja remover este arquivo?')) {
+                try {
+                    const response = await fetch('api/upload.php', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ vistoria_id: vistoriaAtualUpload })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Arquivo removido com sucesso!');
+                        fecharModalUpload();
+                        carregarVistorias();
+                    } else {
+                        alert('Erro ao remover arquivo');
+                    }
+                } catch (error) {
+                    console.error('Erro ao remover arquivo:', error);
+                }
+            }
+        }
+
+        // Funções de Cotação
+        async function enviarParaCotacao(vistoriaId) {
+            if (confirm('Enviar esta vistoria para cotação?')) {
+                try {
+                    const response = await fetch('api/cotacao.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ vistoria_id: vistoriaId })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Vistoria enviada para cotação com sucesso!');
+                        carregarVistorias();
+                    } else {
+                        alert('Erro: ' + result.error);
+                    }
+                } catch (error) {
+                    console.error('Erro ao enviar para cotação:', error);
+                }
+            }
+        }
+        
+        async function verStatusCotacao(vistoriaId) {
+            document.getElementById('modalCotacao').style.display = 'block';
+            const content = document.getElementById('cotacaoContent');
+            content.innerHTML = '<div class="spinner"></div>';
+            
+            try {
+                const response = await fetch(`api/cotacao.php?vistoria_id=${vistoriaId}`);
+                const cotacao = await response.json();
+                
+                if (cotacao) {
+                    let html = '<div class="status-info-card">';
+                    html += `<h4>Status: ${cotacao.status}</h4>`;
+                    
+                    if (cotacao.valor_aprovado) {
+                        html += `<p><strong>Valor Aprovado:</strong> R$ ${parseFloat(cotacao.valor_aprovado).toFixed(2).replace('.', ',')}</p>`;
+                    }
+                    
+                    if (cotacao.parceiros && cotacao.parceiros.length > 0) {
+                        html += '<h4>Cotações Recebidas:</h4>';
+                        html += '<table style="width: 100%; margin-top: 10px;">';
+                        html += '<tr><th>Parceiro</th><th>Valor</th><th>Prazo</th></tr>';
+                        
+                        cotacao.parceiros.forEach(p => {
+                            html += '<tr>';
+                            html += `<td>${p.parceiro_nome}</td>`;
+                            html += `<td>R$ ${p.valor ? parseFloat(p.valor).toFixed(2).replace('.', ',') : 'Aguardando'}</td>`;
+                            html += `<td>${p.prazo_dias ? p.prazo_dias + ' dias' : '-'}</td>`;
+                            html += '</tr>';
+                        });
+                        
+                        html += '</table>';
+                    } else {
+                        html += '<p>Aguardando respostas dos parceiros...</p>';
+                    }
+                    
+                    html += '</div>';
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<p>Nenhuma cotação encontrada para esta vistoria.</p>';
+                }
+            } catch (error) {
+                console.error('Erro ao buscar cotação:', error);
+                content.innerHTML = '<p>Erro ao carregar informações da cotação.</p>';
+            }
+        }
+        
+        function fecharModalCotacao() {
+            document.getElementById('modalCotacao').style.display = 'none';
+        }
+
+        // Funções de Proposta
+        function criarProposta(vistoriaId) {
+            const vistoria = vistorias.find(v => v.id == vistoriaId);
+            if (!vistoria) return;
+            
+            document.getElementById('propostaVistoriaId').value = vistoriaId;
+            
+            // Preencher valor com o valor aprovado da cotação
+            if (vistoria.valor_aprovado) {
+                document.getElementById('valorTotal').value = vistoria.valor_aprovado;
+            }
+            
+            // Preencher descrição padrão
+            document.getElementById('descricaoServicos').value = `Serviço de mudança residencial conforme vistoria realizada.
+            
+Inclui:
+- Embalagem profissional de todos os itens
+- Desmontagem e montagem de móveis
+- Transporte seguro com caminhão apropriado
+- Seguro durante o transporte
+- Equipe especializada
+
+Endereço: ${vistoria.endereco}
+Tipo de imóvel: ${vistoria.tipo_imovel}`;
+            
+            document.getElementById('modalProposta').style.display = 'block';
+        }
+        
+        function fecharModalProposta() {
+            document.getElementById('modalProposta').style.display = 'none';
+            document.getElementById('formProposta').reset();
+        }
+        
+        document.getElementById('formProposta').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                vistoria_id: document.getElementById('propostaVistoriaId').value,
+                valor_total: formData.get('valor_total'),
+                descricao_servicos: formData.get('descricao_servicos'),
+                validade_dias: formData.get('validade_dias'),
+                enviar_email: document.getElementById('enviarEmail').checked
+            };
+            
+            try {
+                const response = await fetch('api/propostas.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Proposta criada e enviada com sucesso!');
+                    fecharModalProposta();
+                    carregarVistorias();
+                } else {
+                    alert('Erro ao criar proposta: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Erro ao criar proposta:', error);
+                alert('Erro ao criar proposta');
+            }
+        });
+        
+        async function verProposta(vistoriaId) {
+            try {
+                const response = await fetch(`api/propostas.php?vistoria_id=${vistoriaId}`);
+                const proposta = await response.json();
+                
+                if (proposta) {
+                    let mensagem = `Proposta #${proposta.id}\n\n`;
+                    mensagem += `Valor: R$ ${parseFloat(proposta.valor_total).toFixed(2).replace('.', ',')}\n`;
+                    mensagem += `Status: ${proposta.status}\n`;
+                    mensagem += `Validade: ${proposta.validade_dias} dias\n`;
+                    
+                    if (proposta.data_envio) {
+                        mensagem += `Enviada em: ${new Date(proposta.data_envio).toLocaleDateString('pt-BR')}\n`;
+                    }
+                    
+                    if (proposta.data_aceite) {
+                        mensagem += `Aceita em: ${new Date(proposta.data_aceite).toLocaleDateString('pt-BR')}\n`;
+                    }
+                    
+                    alert(mensagem);
+                } else {
+                    alert('Proposta não encontrada');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar proposta:', error);
+            }
+        }
+        
+        function verDetalhes(vistoriaId) {
+            // Por enquanto, apenas mostrar o relatório
+            visualizarRelatorio(vistoriaId);
+        }
+
+        // Máscaras
         document.getElementById('cpf').addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length <= 11) {
@@ -1143,7 +1714,6 @@ require_once 'session.php';
             }
         });
 
-        // Máscara para Telefone
         document.getElementById('telefone').addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length <= 11) {
@@ -1170,10 +1740,15 @@ require_once 'session.php';
             const formData = new FormData(e.target);
             const vistoriaId = document.getElementById('vistoriaId').value;
             
+            // Re-habilitar status se estava desabilitado
+            const selectStatus = document.getElementById('status');
+            selectStatus.disabled = false;
+            
             const vistoria = {
                 cliente: formData.get('cliente'),
                 cpf: formData.get('cpf'),
                 telefone: formData.get('telefone'),
+                email: formData.get('email'),
                 vendedor: formData.get('vendedor'),
                 endereco: formData.get('endereco'),
                 tipo_imovel: formData.get('tipo_imovel'),
@@ -1207,14 +1782,20 @@ require_once 'session.php';
 
         // Fechar modal ao clicar fora
         window.onclick = function(event) {
-            if (event.target == document.getElementById('modalVistoria')) {
-                fecharModal();
-            }
-            if (event.target == document.getElementById('modalVistoriasDia')) {
-                fecharModalDia();
-            }
-            if (isGestor && event.target == document.getElementById('modalVendedor')) {
-                fecharModalVendedor();
+            if (event.target.classList.contains('modal')) {
+                if (event.target == document.getElementById('modalVistoria')) {
+                    fecharModal();
+                } else if (event.target == document.getElementById('modalVistoriasDia')) {
+                    fecharModalDia();
+                } else if (event.target == document.getElementById('modalUpload')) {
+                    fecharModalUpload();
+                } else if (event.target == document.getElementById('modalCotacao')) {
+                    fecharModalCotacao();
+                } else if (event.target == document.getElementById('modalProposta')) {
+                    fecharModalProposta();
+                } else if (isGestor && event.target == document.getElementById('modalVendedor')) {
+                    fecharModalVendedor();
+                }
             }
         }
 
