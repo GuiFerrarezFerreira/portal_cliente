@@ -470,6 +470,39 @@ require_once 'session.php';
             background-color: #f8f9fa;
         }
 
+        /* Acesso rápido para gestores */
+        .quick-access {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .quick-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .quick-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .quick-card h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .quick-card p {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
         /* Status info cards */
         .status-info-card {
             background-color: #f8f9fa;
@@ -524,6 +557,27 @@ require_once 'session.php';
         <?php if(isVendedor()): ?>
         <div class="alert-info">
             <strong>Atenção:</strong> Você está visualizando apenas suas próprias vistorias.
+        </div>
+        <?php endif; ?>
+
+        <?php if(isGestor()): ?>
+        <!-- Acesso Rápido para Gestores -->
+        <div class="quick-access">
+            <div class="quick-card">
+                <h3>📊 Cotações</h3>
+                <p>Gerenciar cotações e aprovar propostas dos parceiros</p>
+                <a href="cotacoes.php" class="btn btn-info">Acessar Cotações</a>
+            </div>
+            <div class="quick-card">
+                <h3>🤝 Parceiros</h3>
+                <p>Cadastrar e gerenciar parceiros de cotação</p>
+                <a href="parceiros.php" class="btn btn-warning">Gerenciar Parceiros</a>
+            </div>
+            <div class="quick-card">
+                <h3>📈 Relatórios</h3>
+                <p>Visualizar relatórios e estatísticas do sistema</p>
+                <button class="btn btn-secondary" onclick="alert('Em desenvolvimento')">Ver Relatórios</button>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -1237,7 +1291,9 @@ require_once 'session.php';
                     if (podeEditar) {
                         if (vistoria.arquivo_lista_seguro) {
                             botoes += `<button class="btn btn-sm btn-secondary" onclick="abrirModalUpload(${vistoria.id})">Ver Arquivo</button>`;
-                            botoes += `<button class="btn btn-sm btn-warning" onclick="enviarParaCotacao(${vistoria.id})">Enviar para Cotação</button>`;
+                            if (isGestor) {
+                                botoes += `<button class="btn btn-sm btn-warning" onclick="enviarParaCotacao(${vistoria.id})">Enviar para Cotação</button>`;
+                            }
                         } else {
                             botoes += `<button class="btn btn-sm btn-warning" onclick="abrirModalUpload(${vistoria.id})">Anexar Lista Seguro</button>`;
                         }
@@ -1245,7 +1301,9 @@ require_once 'session.php';
                     break;
                     
                 case 'Enviada_Cotacao':
-                    botoes += `<button class="btn btn-sm btn-info" onclick="verStatusCotacao(${vistoria.id})">Ver Cotação</button>`;
+                    if (isGestor) {
+                        botoes += `<button class="btn btn-sm btn-info" onclick="verStatusCotacao(${vistoria.id})">Ver Cotação</button>`;
+                    }
                     break;
                     
                 case 'Cotacao_Aprovada':
@@ -1591,6 +1649,13 @@ require_once 'session.php';
                     }
                     
                     html += '</div>';
+                    
+                    if (isGestor) {
+                        html += '<div style="margin-top: 20px; text-align: center;">';
+                        html += '<a href="cotacoes.php" class="btn btn-info">Gerenciar Cotações</a>';
+                        html += '</div>';
+                    }
+                    
                     content.innerHTML = html;
                 } else {
                     content.innerHTML = '<p>Nenhuma cotação encontrada para esta vistoria.</p>';
@@ -1675,9 +1740,10 @@ Tipo de imóvel: ${vistoria.tipo_imovel}`;
         async function verProposta(vistoriaId) {
             try {
                 const response = await fetch(`api/propostas.php?vistoria_id=${vistoriaId}`);
-                const proposta = await response.json();
+                const propostas = await response.json();
                 
-                if (proposta) {
+                if (propostas && propostas.length > 0) {
+                    const proposta = propostas[0]; // Pegar a mais recente
                     let mensagem = `Proposta #${proposta.id}\n\n`;
                     mensagem += `Valor: R$ ${parseFloat(proposta.valor_total).toFixed(2).replace('.', ',')}\n`;
                     mensagem += `Status: ${proposta.status}\n`;
