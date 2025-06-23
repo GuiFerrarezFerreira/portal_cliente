@@ -66,6 +66,67 @@ function getVendedorId($pdo, $nomeVendedor) {
     return $result ? $result['id'] : null;
 }
 
+// Função para verificar se usuário pode editar vistoria
+function podeEditarVistoria($vistoria, $usuario) {
+    // Gestor pode editar todas
+    if ($usuario['tipo'] === 'gestor') {
+        return true;
+    }
+    
+    // Vendedor só pode editar suas próprias vistorias
+    if ($usuario['tipo'] === 'vendedor' && $vistoria['vendedor'] === $usuario['nome']) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Função para verificar se usuário pode ver vistoria
+function podeVerVistoria($vistoria, $usuario) {
+    // Gestor pode ver todas
+    if ($usuario['tipo'] === 'gestor') {
+        return true;
+    }
+    
+    // Vendedor só pode ver suas próprias vistorias
+    if ($usuario['tipo'] === 'vendedor' && $vistoria['vendedor'] === $usuario['nome']) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Função para registrar histórico
+function registrarHistorico($pdo, $tabela, $registroId, $statusAnterior, $statusNovo, $usuarioId, $observacoes) {
+    $stmt = $pdo->prepare("
+        INSERT INTO historico_status (tabela, registro_id, status_anterior, status_novo, usuario_id, observacoes) 
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([$tabela, $registroId, $statusAnterior, $statusNovo, $usuarioId, $observacoes]);
+}
+
+// Função para criar notificação
+function criarNotificacao($pdo, $usuarioId, $tipo, $titulo, $mensagem) {
+    $stmt = $pdo->prepare("
+        INSERT INTO notificacoes (usuario_id, tipo, titulo, mensagem) 
+        VALUES (?, ?, ?, ?)
+    ");
+    $stmt->execute([$usuarioId, $tipo, $titulo, $mensagem]);
+}
+
+// Validar se usuário está autenticado
+if (!isset($_SESSION['usuario_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Não autenticado']);
+    exit;
+}
+
+$usuario = [
+    'id' => $_SESSION['usuario_id'],
+    'nome' => $_SESSION['usuario_nome'],
+    'tipo' => $_SESSION['usuario_tipo']
+];
+
 switch($method) {
     case 'GET':
         try {
@@ -82,27 +143,66 @@ switch($method) {
                 }
                 
                 // Verificar permissão
-                if(isGestor() || $vistoria['vendedor'] === $_SESSION['usuario_nome']) {
-                    echo json_encode($vistoria);
-                } else {
+                if (!podeVerVistoria($vistoria, $usuario)) {
                     http_response_code(403);
-                    echo json_encode(['error' => 'Acesso negado']);
-                }
-            } else {
-                // Listar vistorias
-                if(isGestor()) {
-                    // Gestor vê todas
-                    $sql = "SELECT * FROM vistorias ORDER BY data_vistoria DESC";
-                    $stmt = $pdo->query($sql);
-                } else {
-                    // Vendedor vê apenas as suas
-                    $sql = "SELECT * FROM vistorias WHERE vendedor = ? ORDER BY data_vistoria DESC";
-                    $stmt = $pdo->prepare($sql);
-                    $stmt->execute([$_SESSION['usuario_nome']]);
+                    echo json_encode(['error' => 'Sem permissão para visualizar esta vistoria']);
+                    break;
                 }
                 
+                echo json_encode($vistoria);
+                
+            } else {
+                // Listar vistorias
+                $where = [];
+                $params = [];
+                
+                // Aplicar filtros baseado no tipo de usuário
+                if ($usuario['tipo'] === 'vendedor') {
+                    $where[] = 'vendedor = ?';
+                    $params[] = $usuario['nome'];
+                }
+                
+                // Filtros adicionais
+                if (isset($_GET['status'])) {
+                    $where[] = 'status = ?';
+                    $params[] = $_GET['status'];
+                }
+                
+                if (isset($_GET['data_inicio']) && isset($_GET['data_fim'])) {
+                    $where[] = 'DATE(data_vistoria) BETWEEN ? AND ?';
+                    $params[] = $_GET['data_inicio'];
+                    $params[] = $_GET['data_fim'];
+                }
+                
+                if (isset($_GET['cliente'])) {
+                    $where[] = 'cliente LIKE ?';
+                    $params[] = '%' . $_GET['cliente'] . '%';
+                }
+                
+                $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+                
+                $sql = "SELECT * FROM vistorias $whereClause ORDER BY data_vistoria DESC";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+                
                 $vistorias = $stmt->fetchAll();
-                echo json_encode($vistorias);
+                
+                // Adicionar estatísticas se solicitado
+                if (isset($_GET['incluir_estatisticas'])) {
+                    $estatisticas = [
+                        'total' => count($vistorias),
+                        'pendentes' => count(array_filter($vistorias, fn($v) => $v['status'] === 'Pendente')),
+                        'concluidas' => count(array_filter($vistorias, fn($v) => $v['status'] === 'Concluída')),
+                        'canceladas' => count(array_filter($vistorias, fn($v) => $v['status'] === 'Cancelada'))
+                    ];
+                    
+                    echo json_encode([
+                        'vistorias' => $vistorias,
+                        'estatisticas' => $estatisticas
+                    ]);
+                } else {
+                    echo json_encode($vistorias);
+                }
             }
         } catch (Exception $e) {
             http_response_code(500);
@@ -115,6 +215,12 @@ switch($method) {
             // Criar nova vistoria
             $data = json_decode(file_get_contents('php://input'), true);
             
+            if (!$data) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Dados inválidos']);
+                break;
+            }
+            
             // Validar dados
             $erros = validarDadosVistoria($data);
             if (!empty($erros)) {
@@ -124,8 +230,13 @@ switch($method) {
             }
             
             // Se não for gestor, forçar o vendedor a ser o usuário logado
-            if(!isGestor()) {
-                $data['vendedor'] = $_SESSION['usuario_nome'];
+            if ($usuario['tipo'] === 'vendedor') {
+                $data['vendedor'] = $usuario['nome'];
+            } elseif (empty($data['vendedor'])) {
+                // Gestor deve informar o vendedor
+                http_response_code(400);
+                echo json_encode(['error' => 'Vendedor é obrigatório']);
+                break;
             }
             
             // Obter ID do vendedor
@@ -160,19 +271,41 @@ switch($method) {
             $vistoriaId = $pdo->lastInsertId();
             
             // Registrar no histórico
-            $stmt = $pdo->prepare("
-                INSERT INTO historico_status (tabela, registro_id, status_anterior, status_novo, usuario_id, observacoes) 
-                VALUES ('vistorias', ?, NULL, ?, ?, 'Vistoria criada')
-            ");
-            $stmt->execute([$vistoriaId, $data['status'] ?? 'Pendente', $_SESSION['usuario_id']]);
+            registrarHistorico(
+                $pdo,
+                'vistorias',
+                $vistoriaId,
+                null,
+                $data['status'] ?? 'Pendente',
+                $usuario['id'],
+                'Vistoria criada'
+            );
+            
+            // Criar notificação para o vendedor se foi criada por gestor
+            if ($usuario['tipo'] === 'gestor' && $vendedorId) {
+                criarNotificacao(
+                    $pdo,
+                    $vendedorId,
+                    'nova_vistoria',
+                    'Nova Vistoria Agendada',
+                    "Uma nova vistoria foi agendada para você: {$data['cliente']} - {$data['endereco']}"
+                );
+            }
+            
+            // Buscar vistoria criada
+            $stmt = $pdo->prepare("SELECT * FROM vistorias WHERE id = ?");
+            $stmt->execute([$vistoriaId]);
+            $vistoriaCriada = $stmt->fetch();
             
             // Commit da transação
             $pdo->commit();
             
+            http_response_code(201);
             echo json_encode([
                 'success' => true,
-                'id' => $vistoriaId, 
-                'message' => 'Vistoria criada com sucesso'
+                'id' => $vistoriaId,
+                'message' => 'Vistoria criada com sucesso',
+                'vistoria' => $vistoriaCriada
             ]);
             
         } catch (Exception $e) {
@@ -191,7 +324,7 @@ switch($method) {
                 break;
             }
             
-            $vistoriaId = $_GET['id'];
+            $vistoriaId = intval($_GET['id']);
             
             // Verificar se vistoria existe
             $stmt = $pdo->prepare("SELECT * FROM vistorias WHERE id = ?");
@@ -205,13 +338,19 @@ switch($method) {
             }
             
             // Verificar permissão
-            if(!isGestor() && $vistoriaAtual['vendedor'] !== $_SESSION['usuario_nome']) {
+            if (!podeEditarVistoria($vistoriaAtual, $usuario)) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Sem permissão para editar esta vistoria']);
                 break;
             }
             
             $data = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$data) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Dados inválidos']);
+                break;
+            }
             
             // Validar dados
             $erros = validarDadosVistoria($data);
@@ -222,15 +361,27 @@ switch($method) {
             }
             
             // Se não for gestor, manter o vendedor original
-            if(!isGestor()) {
+            if ($usuario['tipo'] === 'vendedor') {
                 $data['vendedor'] = $vistoriaAtual['vendedor'];
+                $data['vendedor_id'] = $vistoriaAtual['vendedor_id'];
+            } else {
+                // Gestor pode alterar o vendedor
+                $data['vendedor_id'] = getVendedorId($pdo, $data['vendedor']);
             }
             
-            // Obter ID do vendedor
-            $vendedorId = getVendedorId($pdo, $data['vendedor']);
-            
-            // Verificar mudança de status para registrar histórico
+            // Verificar mudança de status
             $statusMudou = $vistoriaAtual['status'] !== $data['status'];
+            
+            // Validar mudança de status
+            $statusPermitidos = ['Pendente', 'Concluída', 'Cancelada'];
+            if (!in_array($data['status'], $statusPermitidos)) {
+                // Verificar se é um status avançado e se pode ser mantido
+                if ($data['status'] !== $vistoriaAtual['status']) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'Status inválido ou não pode ser alterado manualmente']);
+                    break;
+                }
+            }
             
             // Iniciar transação
             $pdo->beginTransaction();
@@ -246,7 +397,8 @@ switch($method) {
                     tipo_imovel = :tipo_imovel,
                     data_vistoria = :data_vistoria,
                     status = :status,
-                    observacoes = :observacoes
+                    observacoes = :observacoes,
+                    data_atualizacao = NOW()
                     WHERE id = :id";
             
             $stmt = $pdo->prepare($sql);
@@ -256,7 +408,7 @@ switch($method) {
                 ':telefone' => $data['telefone'],
                 ':email' => $data['email'] ?? null,
                 ':vendedor' => $data['vendedor'],
-                ':vendedor_id' => $vendedorId,
+                ':vendedor_id' => $data['vendedor_id'],
                 ':endereco' => trim($data['endereco']),
                 ':tipo_imovel' => $data['tipo_imovel'],
                 ':data_vistoria' => $data['data_vistoria'],
@@ -267,24 +419,51 @@ switch($method) {
             
             // Registrar mudança de status no histórico
             if ($statusMudou) {
-                $stmt = $pdo->prepare("
-                    INSERT INTO historico_status (tabela, registro_id, status_anterior, status_novo, usuario_id, observacoes) 
-                    VALUES ('vistorias', ?, ?, ?, ?, 'Status alterado manualmente')
-                ");
-                $stmt->execute([
-                    $vistoriaId, 
-                    $vistoriaAtual['status'], 
-                    $data['status'], 
-                    $_SESSION['usuario_id']
-                ]);
+                registrarHistorico(
+                    $pdo,
+                    'vistorias',
+                    $vistoriaId,
+                    $vistoriaAtual['status'],
+                    $data['status'],
+                    $usuario['id'],
+                    'Status alterado manualmente'
+                );
+                
+                // Notificar vendedor se status mudou para Concluída
+                if ($data['status'] === 'Concluída' && $data['vendedor_id']) {
+                    criarNotificacao(
+                        $pdo,
+                        $data['vendedor_id'],
+                        'vistoria_concluida',
+                        'Vistoria Concluída',
+                        "A vistoria do cliente {$data['cliente']} foi marcada como concluída"
+                    );
+                }
             }
+            
+            // Se vendedor mudou, notificar novo vendedor
+            if ($vistoriaAtual['vendedor'] !== $data['vendedor'] && $data['vendedor_id']) {
+                criarNotificacao(
+                    $pdo,
+                    $data['vendedor_id'],
+                    'vistoria_transferida',
+                    'Vistoria Transferida',
+                    "A vistoria do cliente {$data['cliente']} foi transferida para você"
+                );
+            }
+            
+            // Buscar vistoria atualizada
+            $stmt = $pdo->prepare("SELECT * FROM vistorias WHERE id = ?");
+            $stmt->execute([$vistoriaId]);
+            $vistoriaAtualizada = $stmt->fetch();
             
             // Commit da transação
             $pdo->commit();
             
             echo json_encode([
                 'success' => true,
-                'message' => 'Vistoria atualizada com sucesso'
+                'message' => 'Vistoria atualizada com sucesso',
+                'vistoria' => $vistoriaAtualizada
             ]);
             
         } catch (Exception $e) {
@@ -297,7 +476,7 @@ switch($method) {
     case 'DELETE':
         try {
             // Excluir vistoria (apenas gestor)
-            if(!isGestor()) {
+            if ($usuario['tipo'] !== 'gestor') {
                 http_response_code(403);
                 echo json_encode(['error' => 'Apenas gestores podem excluir vistorias']);
                 break;
@@ -309,7 +488,7 @@ switch($method) {
                 break;
             }
             
-            $vistoriaId = $_GET['id'];
+            $vistoriaId = intval($_GET['id']);
             
             // Verificar se vistoria existe
             $stmt = $pdo->prepare("SELECT * FROM vistorias WHERE id = ?");
@@ -322,7 +501,15 @@ switch($method) {
                 break;
             }
             
-            // Verificar se pode ser excluída (não ter cotações, propostas, etc)
+            // Verificar se pode ser excluída
+            $statusBloqueados = ['Enviada_Cotacao', 'Cotacao_Aprovada', 'Proposta_Enviada', 'Proposta_Aceita', 'Em_Andamento', 'Finalizada'];
+            if (in_array($vistoria['status'], $statusBloqueados)) {
+                http_response_code(400);
+                echo json_encode(['error' => "Não é possível excluir vistoria com status: {$vistoria['status']}"]);
+                break;
+            }
+            
+            // Verificar dependências
             $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM cotacoes WHERE vistoria_id = ?");
             $stmt->execute([$vistoriaId]);
             $cotacoes = $stmt->fetch();
@@ -361,6 +548,17 @@ switch($method) {
             // Excluir vistoria
             $stmt = $pdo->prepare("DELETE FROM vistorias WHERE id = ?");
             $stmt->execute([$vistoriaId]);
+            
+            // Notificar vendedor
+            if ($vistoria['vendedor_id']) {
+                criarNotificacao(
+                    $pdo,
+                    $vistoria['vendedor_id'],
+                    'vistoria_excluida',
+                    'Vistoria Excluída',
+                    "A vistoria do cliente {$vistoria['cliente']} foi excluída pelo gestor"
+                );
+            }
             
             // Commit da transação
             $pdo->commit();
