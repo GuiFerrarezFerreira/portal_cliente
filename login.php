@@ -365,125 +365,6 @@ $usuariosDemonstracao = [
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
 
-        .remember-forgot {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #4a5568;
-            font-size: 14px;
-        }
-
-        .remember-me input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .forgot-link {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            transition: color 0.3s;
-        }
-
-        .forgot-link:hover {
-            color: #764ba2;
-            text-decoration: underline;
-        }
-
-        .divider {
-            text-align: center;
-            margin: 30px 0;
-            position: relative;
-        }
-
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #e2e8f0;
-        }
-
-        .divider span {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 0 20px;
-            color: #a0aec0;
-            font-size: 14px;
-            position: relative;
-        }
-
-        .demo-users {
-            background: #f7fafc;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-
-        .demo-users h3 {
-            font-size: 14px;
-            color: #4a5568;
-            margin-bottom: 16px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .demo-user-card {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .demo-user-card:hover {
-            border-color: #667eea;
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .demo-user-info {
-            flex: 1;
-        }
-
-        .demo-user-email {
-            font-size: 13px;
-            color: #2d3748;
-            font-weight: 600;
-        }
-
-        .demo-user-pass {
-            font-size: 11px;
-            color: #718096;
-            margin-top: 2px;
-        }
-
-        .demo-user-type {
-            background: #667eea;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
 
         .loading-spinner {
             display: none;
@@ -613,15 +494,6 @@ $usuariosDemonstracao = [
                 </div>
             </div>
 
-            <div class="remember-forgot">
-                <label class="remember-me">
-                    <input type="checkbox" name="lembrar">
-                    Lembrar-me
-                </label>
-                <a href="#" class="forgot-link" onclick="alert('Contate o administrador do sistema para recuperar sua senha.')">
-                    Esqueceu a senha?
-                </a>
-            </div>
 
             <button type="submit" class="btn-login" <?php echo $tentativasErro >= 5 ? 'disabled' : ''; ?>>
                 <span id="btnText">Entrar</span>
@@ -629,26 +501,6 @@ $usuariosDemonstracao = [
             </button>
         </form>
 
-        <div class="divider">
-            <span>Usuários de Demonstração</span>
-        </div>
-
-        <div class="demo-users">
-            <h3>Clique para preencher automaticamente</h3>
-            <?php foreach($usuariosDemonstracao as $user): ?>
-            <div class="demo-user-card" onclick="preencherLogin('<?php echo $user['email']; ?>', '<?php echo $user['senha']; ?>')">
-                <div class="demo-user-info">
-                    <div class="demo-user-email"><?php echo $user['email']; ?></div>
-                    <div class="demo-user-pass">Senha: <?php echo $user['senha']; ?></div>
-                </div>
-                <span class="demo-user-type"><?php echo $user['tipo']; ?></span>
-            </div>
-            <?php endforeach; ?>
-        </div>
-
-        <div class="footer-text">
-            <p>&copy; 2025 Sistema de Mudanças. Todos os direitos reservados.</p>
-        </div>
     </div>
 
     <script>
@@ -677,19 +529,6 @@ $usuariosDemonstracao = [
             }
         }
 
-        // Função para preencher login com dados de demonstração
-        function preencherLogin(email, senha) {
-            document.getElementById('email').value = email;
-            document.getElementById('senha').value = senha;
-            
-            // Adicionar efeito visual
-            const cards = document.querySelectorAll('.demo-user-card');
-            cards.forEach(card => card.style.transform = 'translateX(0)');
-            event.currentTarget.style.transform = 'translateX(10px)';
-            
-            // Focar no botão de login
-            document.querySelector('.btn-login').focus();
-        }
 
         // Mostrar spinner ao enviar formulário
         document.getElementById('loginForm').addEventListener('submit', function(e) {
