@@ -3,12 +3,15 @@ require_once 'session.php';
 require_once 'config.php';
 
 // Verificar se é cotador ou gestor
-if(!isCotador() && !isGestor()) {
+if(!isset($_SESSION['usuario_tipo']) || ($_SESSION['usuario_tipo'] !== 'cotador' && $_SESSION['usuario_tipo'] !== 'gestor')) {
     header('Location: index.php');
     exit;
 }
 
-$isCotador = isCotador();
+// Função auxiliar para verificar se é cotador
+function isCotador() {
+    return isset($_SESSION['usuario_tipo']) && $_SESSION['usuario_tipo'] === 'cotador';
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -24,9 +27,10 @@ $isCotador = isCotador();
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #2d3748;
+            line-height: 1.6;
         }
 
         .container {
@@ -40,6 +44,7 @@ $isCotador = isCotador();
             color: white;
             padding: 1rem 0;
             margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .header-content {
@@ -61,8 +66,21 @@ $isCotador = isCotador();
             font-size: 14px;
         }
 
-        h1, h2, h3 {
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        h2 {
+            font-size: 24px;
             margin-bottom: 20px;
+            color: #2d3748;
+        }
+
+        h3 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #4a5568;
         }
 
         .btn {
@@ -70,17 +88,21 @@ $isCotador = isCotador();
             color: white;
             padding: 10px 20px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
             text-decoration: none;
-            display: inline-block;
-            margin: 5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             font-size: 14px;
-            transition: background-color 0.3s;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
 
         .btn:hover {
             background-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .btn-success {
@@ -124,49 +146,63 @@ $isCotador = isCotador();
         }
 
         .btn-sm {
-            padding: 5px 10px;
-            font-size: 12px;
+            padding: 6px 12px;
+            font-size: 13px;
         }
 
         .btn-logout {
             background-color: #e74c3c;
-            font-size: 14px;
         }
 
+        /* Cards e Layout */
         .card {
             background-color: white;
-            border-radius: 8px;
-            padding: 20px;
+            border-radius: 10px;
+            padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
         .card-header {
-            padding: 20px;
-            border-bottom: 1px solid #e0e0e0;
-            margin: -20px -20px 20px -20px;
-            border-radius: 8px 8px 0 0;
+            padding: 20px 25px;
+            border-bottom: 1px solid #e5e7eb;
+            margin: -25px -25px 25px -25px;
+            border-radius: 10px 10px 0 0;
+            background-color: #f8f9fa;
         }
 
         .card-header h2 {
             margin: 0;
+            color: #1a202c;
         }
 
+        /* Grid de Estatísticas */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
 
         .stat-card {
             background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             text-align: center;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .stat-card::before {
@@ -179,30 +215,32 @@ $isCotador = isCotador();
         }
 
         .stat-card.blue::before {
-            background-color: #3498db;
+            background: linear-gradient(90deg, #3498db, #2980b9);
         }
 
         .stat-card.green::before {
-            background-color: #27ae60;
+            background: linear-gradient(90deg, #27ae60, #229954);
         }
 
         .stat-card.yellow::before {
-            background-color: #f39c12;
+            background: linear-gradient(90deg, #f39c12, #e67e22);
         }
 
         .stat-card.red::before {
-            background-color: #e74c3c;
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
         }
 
         .stat-value {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1a202c;
         }
 
         .stat-label {
-            color: #666;
+            color: #718096;
             font-size: 14px;
+            font-weight: 500;
         }
 
         .stat-icon {
@@ -213,6 +251,7 @@ $isCotador = isCotador();
             opacity: 0.1;
         }
 
+        /* Tabelas */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -220,60 +259,66 @@ $isCotador = isCotador();
         }
 
         th, td {
-            padding: 12px;
+            padding: 14px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         th {
-            background-color: #34495e;
-            color: white;
-            font-weight: bold;
+            background-color: #f8f9fa;
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
         }
 
+        /* Status Badges */
         .status-badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
+            padding: 6px 14px;
+            border-radius: 20px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-aguardando_parceiros {
-            background-color: #3498db;
-            color: white;
+            background-color: #dbeafe;
+            color: #1e40af;
         }
 
         .status-em_cotacao {
-            background-color: #f39c12;
-            color: white;
+            background-color: #fef3c7;
+            color: #92400e;
         }
 
         .status-cotacoes_recebidas {
-            background-color: #9b59b6;
-            color: white;
+            background-color: #ede9fe;
+            color: #6b21a8;
         }
 
         .status-aprovada {
-            background-color: #27ae60;
-            color: white;
+            background-color: #d1fae5;
+            color: #065f46;
         }
 
         .status-rejeitada {
-            background-color: #e74c3c;
-            color: white;
+            background-color: #fee2e2;
+            color: #991b1b;
         }
 
         .status-cancelada {
-            background-color: #95a5a6;
-            color: white;
+            background-color: #f3f4f6;
+            color: #4b5563;
         }
 
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -282,87 +327,117 @@ $isCotador = isCotador();
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .modal-content {
             background-color: white;
-            margin: 50px auto;
-            padding: 30px;
+            margin: 40px auto;
+            padding: 0;
             width: 90%;
             max-width: 800px;
-            border-radius: 8px;
-            position: relative;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
             max-height: 90vh;
-            overflow-y: auto;
+            overflow: hidden;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 25px 30px;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f8f9fa;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #1a202c;
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: calc(90vh - 80px);
+            overflow-y: auto;
         }
 
         .close {
             font-size: 28px;
             cursor: pointer;
-            color: #aaa;
+            color: #6b7280;
+            transition: color 0.3s;
         }
 
         .close:hover {
-            color: #000;
+            color: #1f2937;
         }
 
+        /* Elementos Específicos de Cotação */
         .cotacao-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
             background-color: #f8f9fa;
-            border-radius: 5px;
+            border-radius: 8px;
         }
 
         .prazo-alerta {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 10px 15px;
-            border-radius: 5px;
+            background-color: #fef3c7;
+            border: 1px solid #fbbf24;
+            color: #92400e;
+            padding: 15px 20px;
+            border-radius: 8px;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-weight: 500;
         }
 
         .parceiro-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
             padding: 20px;
             margin-bottom: 15px;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            background-color: white;
         }
 
         .parceiro-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             transform: translateY(-2px);
         }
 
         .parceiro-card.melhor-preco {
-            border-color: #27ae60;
+            border-color: #10b981;
             background-color: #f0fdf4;
         }
 
         .melhor-preco-badge {
-            background-color: #27ae60;
+            background-color: #10b981;
             color: white;
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
+            font-weight: 600;
             margin-left: 10px;
+            text-transform: uppercase;
         }
 
         .parceiro-header {
@@ -385,25 +460,29 @@ $isCotador = isCotador();
 
         .info-label {
             font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
+            color: #6b7280;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .info-value {
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
+            color: #1f2937;
         }
 
         .valor-destaque {
             font-size: 24px;
-            color: #27ae60;
+            color: #10b981;
         }
 
         .observacoes-box {
             background-color: #f8f9fa;
             padding: 15px;
-            border-radius: 5px;
+            border-radius: 6px;
             margin-top: 15px;
+            border-left: 3px solid #3498db;
         }
 
         .action-buttons {
@@ -413,28 +492,41 @@ $isCotador = isCotador();
             justify-content: flex-end;
         }
 
+        /* Abas */
         .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #ecf0f1;
+            gap: 0;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e5e7eb;
         }
 
         .tab {
-            padding: 10px 20px;
+            padding: 12px 24px;
             cursor: pointer;
-            border-radius: 5px 5px 0 0;
-            background-color: #ecf0f1;
-            transition: background-color 0.3s;
+            background-color: transparent;
+            border: none;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
         .tab:hover {
-            background-color: #dfe6e9;
+            color: #3498db;
         }
 
         .tab.active {
+            color: #3498db;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
             background-color: #3498db;
-            color: white;
         }
 
         .tab-content {
@@ -445,6 +537,7 @@ $isCotador = isCotador();
             display: block;
         }
 
+        /* Filtros */
         .filtros {
             display: flex;
             gap: 15px;
@@ -460,20 +553,32 @@ $isCotador = isCotador();
 
         .filtro-item label {
             font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
+            color: #6b7280;
+            margin-bottom: 6px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .filtro-item select {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background-color: white;
+            font-size: 14px;
+            transition: border-color 0.3s;
         }
 
+        .filtro-item select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        /* Estados Vazios */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #666;
+            color: #6b7280;
         }
 
         .empty-state-icon {
@@ -482,8 +587,9 @@ $isCotador = isCotador();
             opacity: 0.3;
         }
 
+        /* Loading */
         .spinner {
-            border: 3px solid #f3f3f3;
+            border: 3px solid #f3f4f6;
             border-top: 3px solid #3498db;
             border-radius: 50%;
             width: 40px;
@@ -497,34 +603,109 @@ $isCotador = isCotador();
             100% { transform: rotate(360deg); }
         }
 
+        /* Alertas */
         .alert {
-            padding: 12px 20px;
-            border-radius: 5px;
+            padding: 16px 20px;
+            border-radius: 8px;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .alert-info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
+            background-color: #dbeafe;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
         }
 
         .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+            background-color: #d1fae5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
         }
 
         .alert-warning {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
+            background-color: #fef3c7;
+            border: 1px solid #fde68a;
+            color: #92400e;
         }
 
         .alert-danger {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
+            background-color: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab {
+                white-space: nowrap;
+            }
+
+            .parceiro-info {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+        }
+
+        /* Animações e Transições */
+        .fade-in {
+            animation: fadeInContent 0.3s ease;
+        }
+
+        @keyframes fadeInContent {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar Customizada */
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
@@ -544,9 +725,14 @@ $isCotador = isCotador();
     </header>
 
     <div class="container">
-        <?php if($isCotador): ?>
+        <?php if(isCotador()): ?>
         <div class="alert alert-info">
-            <strong>Área do Cotador:</strong> Você pode gerenciar todas as cotações em andamento e aprovar/rejeitar propostas dos parceiros.
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+                <strong>Área do Cotador:</strong> Você pode gerenciar todas as cotações em andamento e aprovar/rejeitar propostas dos parceiros.
+            </div>
         </div>
         <?php endif; ?>
 
@@ -576,9 +762,9 @@ $isCotador = isCotador();
 
         <!-- Abas -->
         <div class="tabs">
-            <div class="tab active" onclick="mostrarAba('pendentes')">Cotações Pendentes</div>
-            <div class="tab" onclick="mostrarAba('todas')">Todas as Cotações</div>
-            <div class="tab" onclick="mostrarAba('parceiros')">Performance Parceiros</div>
+            <button class="tab active" onclick="mostrarAba('pendentes')">Cotações Pendentes</button>
+            <button class="tab" onclick="mostrarAba('todas')">Todas as Cotações</button>
+            <button class="tab" onclick="mostrarAba('parceiros')">Performance Parceiros</button>
         </div>
 
         <!-- Conteúdo das Abas -->
@@ -636,7 +822,7 @@ $isCotador = isCotador();
                     </div>
                 </div>
 
-                <table id="tabelaCotacoes">
+                <table>
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -651,7 +837,7 @@ $isCotador = isCotador();
                     </thead>
                     <tbody id="listaCotacoesTodas">
                         <tr>
-                            <td colspan="8" class="text-center">
+                            <td colspan="8" style="text-align: center;">
                                 <div class="spinner"></div>
                             </td>
                         </tr>
@@ -677,7 +863,7 @@ $isCotador = isCotador();
                     </thead>
                     <tbody id="rankingParceiros">
                         <tr>
-                            <td colspan="7" class="text-center">
+                            <td colspan="7" style="text-align: center;">
                                 <div class="spinner"></div>
                             </td>
                         </tr>
@@ -694,7 +880,7 @@ $isCotador = isCotador();
                 <h2 id="modalTitulo">Detalhes da Cotação</h2>
                 <span class="close" onclick="fecharModal()">&times;</span>
             </div>
-            <div id="modalConteudo">
+            <div class="modal-body" id="modalConteudo">
                 <!-- Conteúdo será inserido dinamicamente -->
             </div>
         </div>
@@ -707,7 +893,7 @@ $isCotador = isCotador();
                 <h2>Aprovar Cotação</h2>
                 <span class="close" onclick="fecharModalAprovacao()">&times;</span>
             </div>
-            <div id="modalAprovacaoConteudo">
+            <div class="modal-body" id="modalAprovacaoConteudo">
                 <!-- Conteúdo será inserido dinamicamente -->
             </div>
         </div>
@@ -720,20 +906,23 @@ $isCotador = isCotador();
                 <h2>Rejeitar Cotação</h2>
                 <span class="close" onclick="fecharModalRejeicao()">&times;</span>
             </div>
-            <form id="formRejeicao">
-                <input type="hidden" id="cotacaoIdRejeitar" value="">
-                <div style="margin-bottom: 20px;">
-                    <label for="motivoRejeicao" style="display: block; margin-bottom: 10px; font-weight: bold;">
-                        Motivo da Rejeição:
-                    </label>
-                    <textarea id="motivoRejeicao" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" required
-                              placeholder="Informe o motivo da rejeição..."></textarea>
-                </div>
-                <div class="action-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="fecharModalRejeicao()">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Confirmar Rejeição</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="formRejeicao">
+                    <input type="hidden" id="cotacaoIdRejeitar" value="">
+                    <div style="margin-bottom: 20px;">
+                        <label for="motivoRejeicao" style="display: block; margin-bottom: 10px; font-weight: 600; color: #374151;">
+                            Motivo da Rejeição:
+                        </label>
+                        <textarea id="motivoRejeicao" rows="4" 
+                                  style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px;" 
+                                  placeholder="Informe o motivo da rejeição..." required></textarea>
+                    </div>
+                    <div class="action-buttons" style="justify-content: flex-start;">
+                        <button type="button" class="btn btn-secondary" onclick="fecharModalRejeicao()">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Confirmar Rejeição</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -743,15 +932,19 @@ $isCotador = isCotador();
         let cotacoesPendentes = [];
         let parceirosRanking = [];
         let cotacaoAtual = null;
-        const isCotador = <?php echo $isCotador ? 'true' : 'false'; ?>;
+        const isCotador = <?php echo isCotador() ? 'true' : 'false'; ?>;
         const isGestor = <?php echo isGestor() ? 'true' : 'false'; ?>;
 
         // Função para mostrar aba
         function mostrarAba(aba) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
             
-            // Adiciona active na aba selecionada
+            // Ativar aba selecionada
             if (aba === 'pendentes') {
                 document.querySelector('.tab:nth-child(1)').classList.add('active');
                 document.getElementById('pendentes').classList.add('active');
@@ -773,6 +966,11 @@ $isCotador = isCotador();
                 const response = await fetch('api/cotacao.php');
                 const data = await response.json();
                 
+                if (!Array.isArray(data)) {
+                    console.error('Dados inválidos recebidos:', data);
+                    return;
+                }
+                
                 // Calcular estatísticas
                 let total = data.length;
                 let aguardando = data.filter(c => ['Aguardando_Parceiros', 'Em_Cotacao'].includes(c.status)).length;
@@ -782,10 +980,8 @@ $isCotador = isCotador();
                 let totalEnviadas = 0;
                 let totalRespondidas = 0;
                 data.forEach(cotacao => {
-                    if (cotacao.estatisticas) {
-                        totalEnviadas += cotacao.estatisticas.total_parceiros || 0;
-                        totalRespondidas += cotacao.estatisticas.parceiros_responderam || 0;
-                    }
+                    totalEnviadas += parseInt(cotacao.total_parceiros || 0);
+                    totalRespondidas += parseInt(cotacao.parceiros_responderam || 0);
                 });
                 
                 let taxaResposta = totalEnviadas > 0 ? Math.round((totalRespondidas / totalEnviadas) * 100) : 0;
@@ -807,8 +1003,17 @@ $isCotador = isCotador();
             container.innerHTML = '<div class="spinner"></div>';
             
             try {
-                const response = await fetch('api/cotacao.php?status_not=Aprovada,Rejeitada,Cancelada');
-                cotacoesPendentes = await response.json();
+                const response = await fetch('api/cotacao.php');
+                const todasCotacoes = await response.json();
+                
+                if (!Array.isArray(todasCotacoes)) {
+                    throw new Error('Dados inválidos recebidos');
+                }
+                
+                // Filtrar apenas pendentes
+                cotacoesPendentes = todasCotacoes.filter(c => 
+                    !['Aprovada', 'Rejeitada', 'Cancelada'].includes(c.status)
+                );
                 
                 if (cotacoesPendentes.length === 0) {
                     container.innerHTML = `
@@ -824,10 +1029,14 @@ $isCotador = isCotador();
                 let html = '';
                 for (const cotacao of cotacoesPendentes) {
                     // Buscar detalhes completos
-                    const detailResponse = await fetch(`api/cotacao.php?id=${cotacao.id}`);
-                    const cotacaoCompleta = await detailResponse.json();
-                    
-                    html += renderizarCardCotacao(cotacaoCompleta);
+                    try {
+                        const detailResponse = await fetch(`api/cotacao.php?id=${cotacao.id}`);
+                        const cotacaoCompleta = await detailResponse.json();
+                        html += renderizarCardCotacao(cotacaoCompleta || cotacao);
+                    } catch (error) {
+                        console.error('Erro ao buscar detalhes da cotação:', error);
+                        html += renderizarCardCotacao(cotacao);
+                    }
                 }
                 
                 container.innerHTML = html;
@@ -854,16 +1063,15 @@ $isCotador = isCotador();
             }
             
             // Estatísticas
-            const stats = cotacao.estatisticas || {};
-            const responderam = stats.parceiros_responderam || 0;
-            const total = stats.total_parceiros || 0;
+            const responderam = cotacao.parceiros_responderam || 0;
+            const total = cotacao.total_parceiros || 0;
             
             return `
-                <div class="card" style="margin-bottom: 20px;">
+                <div class="card fade-in" style="margin-bottom: 20px;">
                     <div class="cotacao-header">
                         <div>
                             <h3>Cotação #${cotacao.id} - ${cotacao.cliente || 'Cliente'}</h3>
-                            <p style="margin: 5px 0; color: #666;">
+                            <p style="margin: 5px 0; color: #6b7280;">
                                 <strong>Endereço:</strong> ${cotacao.endereco || 'Não informado'}<br>
                                 <strong>Criada em:</strong> ${formatarDataHora(cotacao.data_criacao)}
                             </p>
@@ -880,17 +1088,17 @@ $isCotador = isCotador();
                             <div class="stat-value">${responderam}/${total}</div>
                             <div class="stat-label">Respostas</div>
                         </div>
-                        ${stats.menor_valor ? `
+                        ${cotacao.estatisticas?.menor_valor ? `
                         <div class="stat-card green">
-                            <div class="stat-value">R$ ${formatarMoeda(stats.menor_valor)}</div>
+                            <div class="stat-value">R$ ${formatarMoeda(cotacao.estatisticas.menor_valor)}</div>
                             <div class="stat-label">Menor Valor</div>
                         </div>
                         <div class="stat-card yellow">
-                            <div class="stat-value">R$ ${formatarMoeda(stats.media_valor)}</div>
+                            <div class="stat-value">R$ ${formatarMoeda(cotacao.estatisticas.media_valor)}</div>
                             <div class="stat-label">Valor Médio</div>
                         </div>
                         <div class="stat-card red">
-                            <div class="stat-value">R$ ${formatarMoeda(stats.maior_valor)}</div>
+                            <div class="stat-value">R$ ${formatarMoeda(cotacao.estatisticas.maior_valor)}</div>
                             <div class="stat-label">Maior Valor</div>
                         </div>
                         ` : ''}
@@ -916,16 +1124,19 @@ $isCotador = isCotador();
         // Função para carregar todas as cotações
         async function carregarTodasCotacoes() {
             const tbody = document.getElementById('listaCotacoesTodas');
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner"></div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;"><div class="spinner"></div></td></tr>';
             
             try {
                 const response = await fetch('api/cotacao.php');
                 cotacoes = await response.json();
                 
+                if (!Array.isArray(cotacoes)) {
+                    throw new Error('Dados inválidos recebidos');
+                }
+                
                 let html = '';
                 cotacoes.forEach(cotacao => {
                     const statusClass = cotacao.status.toLowerCase().replace('_', '');
-                    const stats = cotacao.estatisticas || {};
                     
                     html += `
                         <tr>
@@ -934,7 +1145,7 @@ $isCotador = isCotador();
                             <td>${cotacao.endereco || 'N/A'}</td>
                             <td>${formatarData(cotacao.data_criacao)}</td>
                             <td><span class="status-badge status-${statusClass}">${getStatusLabel(cotacao.status)}</span></td>
-                            <td>${stats.parceiros_responderam || 0}/${stats.total_parceiros || 0}</td>
+                            <td>${cotacao.parceiros_responderam || 0}/${cotacao.total_parceiros || 0}</td>
                             <td>${cotacao.valor_aprovado ? 'R$ ' + formatarMoeda(cotacao.valor_aprovado) : '-'}</td>
                             <td>
                                 <button class="btn btn-sm btn-info" onclick="verDetalhesCotacao(${cotacao.id})">
@@ -945,18 +1156,18 @@ $isCotador = isCotador();
                     `;
                 });
                 
-                tbody.innerHTML = html || '<tr><td colspan="8" class="text-center">Nenhuma cotação encontrada</td></tr>';
+                tbody.innerHTML = html || '<tr><td colspan="8" style="text-align: center;">Nenhuma cotação encontrada</td></tr>';
                 
             } catch (error) {
                 console.error('Erro ao carregar cotações:', error);
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Erro ao carregar cotações</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #e74c3c;">Erro ao carregar cotações</td></tr>';
             }
         }
 
         // Função para carregar ranking de parceiros
         async function carregarRankingParceiros() {
             const tbody = document.getElementById('rankingParceiros');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center"><div class="spinner"></div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><div class="spinner"></div></td></tr>';
             
             try {
                 const response = await fetch('api/parceiros.php?ranking=1&periodo=30');
@@ -972,20 +1183,20 @@ $isCotador = isCotador();
                         <tr>
                             <td>${index + 1}º</td>
                             <td>${parceiro.nome}</td>
-                            <td>${parceiro.total_respostas}</td>
-                            <td>${parceiro.cotacoes_ganhas}</td>
+                            <td>${parceiro.total_respostas || 0}</td>
+                            <td>${parceiro.cotacoes_ganhas || 0}</td>
                             <td>${taxaSucesso}%</td>
-                            <td>R$ ${formatarMoeda(parceiro.valor_medio)}</td>
+                            <td>R$ ${formatarMoeda(parceiro.valor_medio || 0)}</td>
                             <td>${Math.round(parceiro.tempo_resposta_medio || 0)}h</td>
                         </tr>
                     `;
                 });
                 
-                tbody.innerHTML = html || '<tr><td colspan="7" class="text-center">Nenhum parceiro encontrado</td></tr>';
+                tbody.innerHTML = html || '<tr><td colspan="7" style="text-align: center;">Nenhum parceiro encontrado</td></tr>';
                 
             } catch (error) {
                 console.error('Erro ao carregar ranking:', error);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Erro ao carregar ranking</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #e74c3c;">Erro ao carregar ranking</td></tr>';
             }
         }
 
@@ -1036,8 +1247,8 @@ $isCotador = isCotador();
                                         ${melhorPreco ? '<span class="melhor-preco-badge">MELHOR PREÇO</span>' : ''}
                                     </div>
                                     ${parceiro.data_resposta ? 
-                                        `<span style="color: #27ae60;">✓ Respondido em ${formatarDataHora(parceiro.data_resposta)}</span>` : 
-                                        '<span style="color: #f39c12;">⏳ Aguardando resposta</span>'
+                                        `<span style="color: #10b981;">✓ Respondido em ${formatarDataHora(parceiro.data_resposta)}</span>` : 
+                                        '<span style="color: #f59e0b;">⏳ Aguardando resposta</span>'
                                     }
                                 </div>
                                 
@@ -1096,11 +1307,12 @@ $isCotador = isCotador();
                     <input type="hidden" id="aprovacaoValor" value="${valor}">
                     
                     <div class="alert alert-info">
+                        <strong>Confirmar Aprovação</strong><br>
                         Você está prestes a aprovar a proposta de <strong>${parceiroNome}</strong>
                         no valor de <strong>R$ ${formatarMoeda(valor)}</strong>.
                     </div>
                     
-                    <p>Esta ação não pode ser desfeita. Deseja continuar?</p>
+                    <p style="margin-top: 20px;">Esta ação não pode ser desfeita. Deseja continuar?</p>
                     
                     <div class="action-buttons">
                         <button type="button" class="btn btn-secondary" onclick="fecharModalAprovacao()">Cancelar</button>
@@ -1128,8 +1340,8 @@ $isCotador = isCotador();
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        id: cotacaoId,
-                        acao: 'aprovar',
+                        aprovar: true,
+                        cotacao_id: cotacaoId,
                         parceiro_id: parceiroId,
                         valor_aprovado: valor
                     })
@@ -1144,7 +1356,7 @@ $isCotador = isCotador();
                     carregarCotacoesPendentes();
                     carregarEstatisticas();
                 } else {
-                    alert('Erro ao aprovar cotação: ' + result.error);
+                    alert('Erro ao aprovar cotação: ' + (result.error || 'Erro desconhecido'));
                 }
                 
             } catch (error) {
@@ -1157,6 +1369,7 @@ $isCotador = isCotador();
         function abrirModalRejeicao(cotacaoId) {
             document.getElementById('cotacaoIdRejeitar').value = cotacaoId;
             document.getElementById('modalRejeicao').style.display = 'block';
+            document.getElementById('motivoRejeicao').focus();
         }
 
         // Função para rejeitar cotação
@@ -1171,8 +1384,8 @@ $isCotador = isCotador();
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        id: cotacaoId,
-                        acao: 'rejeitar',
+                        rejeitar: true,
+                        cotacao_id: cotacaoId,
                         motivo: motivo
                     })
                 });
@@ -1185,7 +1398,7 @@ $isCotador = isCotador();
                     carregarCotacoesPendentes();
                     carregarEstatisticas();
                 } else {
-                    alert('Erro ao rejeitar cotação: ' + result.error);
+                    alert('Erro ao rejeitar cotação: ' + (result.error || 'Erro desconhecido'));
                 }
                 
             } catch (error) {
@@ -1205,19 +1418,18 @@ $isCotador = isCotador();
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        id: cotacaoId,
-                        acao: 'reenviar',
-                        novo_prazo_horas: 24
+                        reenviar: true,
+                        cotacao_id: cotacaoId
                     })
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert(result.message);
+                    alert(result.message || 'Cotação reenviada com sucesso!');
                     carregarCotacoesPendentes();
                 } else {
-                    alert('Erro: ' + result.error);
+                    alert('Erro: ' + (result.error || 'Erro ao reenviar'));
                 }
                 
             } catch (error) {
@@ -1284,9 +1496,34 @@ $isCotador = isCotador();
             }
         }
 
+        // Função para filtrar cotações
+        function filtrarCotacoes() {
+            // Implementar filtros se necessário
+            carregarCotacoesPendentes();
+            carregarTodasCotacoes();
+        }
+
         // Carregar dados ao iniciar
-        carregarEstatisticas();
-        carregarCotacoesPendentes();
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarEstatisticas();
+            carregarCotacoesPendentes();
+        });
+
+        // Atualizar dados a cada 30 segundos
+        setInterval(function() {
+            if (document.visibilityState === 'visible') {
+                carregarEstatisticas();
+                const abaAtiva = document.querySelector('.tab.active');
+                if (abaAtiva) {
+                    const texto = abaAtiva.textContent.trim();
+                    if (texto.includes('Pendentes')) {
+                        carregarCotacoesPendentes();
+                    } else if (texto.includes('Todas')) {
+                        carregarTodasCotacoes();
+                    }
+                }
+            }
+        }, 30000);
     </script>
 </body>
 </html>
