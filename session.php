@@ -2,20 +2,15 @@
 // session.php - Verificação de sessão e controle de acesso
 session_start();
 
+require_once 'includes/auth.php';
+
 // Verificar se está logado
 if(!isset($_SESSION['usuario_id'])) {
     header('Location: login.php');
     exit;
 }
 
-// Funções de controle de acesso
-function isGestor() {
-    return $_SESSION['usuario_tipo'] === 'gestor';
-}
 
-function isVendedor() {
-    return $_SESSION['usuario_tipo'] === 'vendedor';
-}
 
 function podeExcluir() {
     return isGestor();

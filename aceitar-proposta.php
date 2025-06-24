@@ -811,7 +811,7 @@ function formatarDataHora($data) {
                 </ol>
                 
                 <div style="margin-top: 20px; text-align: center;">
-                    <a href="portal-cliente/login.php" class="btn btn-accept">
+                    <a href="login.php" class="btn btn-accept">
                         Acessar Portal do Cliente
                     </a>
                 </div>

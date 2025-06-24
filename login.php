@@ -500,7 +500,13 @@ $usuariosDemonstracao = [
                 <div class="loading-spinner" id="loadingSpinner"></div>
             </button>
         </form>
+<div class="divider">
+    <span>ou</span>
+</div>
 
+<div class="link-section">
+    <p>É cliente? <a href="login-cliente.php">Acesse o portal do cliente</a></p>
+</div>
     </div>
 
     <script>
