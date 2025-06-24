@@ -78,43 +78,148 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $proposta && !$erro) {
     $acao = $_POST['acao'] ?? '';
     
     if ($acao === 'aceitar') {
+
         try {
-            // Fazer chamada à API para aceitar proposta
-            $data = json_encode(['token' => $token]);
+            $pdo->beginTransaction();
             
-            $ch = curl_init('http://localhost/portal_cliente/api/propostas.php');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($data)
-            ]);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false); // Não seguir redirecionamentos
-            
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
-            
-            if ($curlError) {
-                $erro = 'Erro de conexão: ' . $curlError;
-            } elseif ($httpCode === 200) {
-                $result = json_decode($response, true);
-                if ($result && isset($result['success']) && $result['success']) {
-                    $sucesso = true;
-                    $_SESSION['proposta_aceita'] = true;
-                    $_SESSION['cliente_id'] = $result['cliente_id'] ?? null;
-                    $_SESSION['mudanca_id'] = $result['mudanca_id'] ?? null;
-                } else {
-                    $erro = $result['error'] ?? 'Erro ao processar aceite';
-                }
-            } else {
-                $erro = 'Erro ao processar aceite. Código HTTP: ' . $httpCode;
+            // 1. Atualizar status da proposta
+            $stmt = $pdo->prepare("
+                UPDATE propostas 
+                SET status = 'Aceita', 
+                    data_aceite = NOW() 
+                WHERE token_aceite = ? AND status = 'Enviada'
+            ");
+            $stmt->execute([$token]);
+
+            if ($stmt->rowCount() === 0) {
+                throw new Exception('Não foi possível atualizar a proposta');
             }
+            
+            // 2. Verificar se cliente já existe
+            $stmt = $pdo->prepare("
+                SELECT id FROM clientes 
+                WHERE cpf = ? OR email = ?
+            ");
+            $stmt->execute([$proposta['cpf'], $proposta['email']]);
+            $clienteExistente = $stmt->fetch();
+            
+            if ($clienteExistente) {
+                $clienteId = $clienteExistente['id'];
+                
+                // Atualizar dados do cliente
+                $stmt = $pdo->prepare("
+                    UPDATE clientes 
+                    SET nome = ?,
+                        telefone = ?,
+                        email = COALESCE(?, email),
+                        vistoria_id = ?,
+                        updated_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([
+                    $proposta['cliente'],
+                    $proposta['telefone'],
+                    $proposta['email'],
+                    $proposta['vistoria_id'],
+                    $clienteId
+                ]);
+            } else {
+                // Criar novo cliente
+                $stmt = $pdo->prepare("
+                    INSERT INTO clientes (nome, cpf, telefone, email, vistoria_id, created_at) 
+                    VALUES (?, ?, ?, ?, ?, NOW())
+                ");
+                $stmt->execute([
+                    $proposta['cliente'],
+                    $proposta['cpf'],
+                    $proposta['telefone'],
+                    $proposta['email'],
+                    $proposta['vistoria_id']
+                ]);
+                $clienteId = $pdo->lastInsertId();
+            }
+            
+            // 3. Criar mudança
+            $stmt = $pdo->prepare("
+                INSERT INTO mudancas (
+                    vistoria_id, 
+                    proposta_id,
+                    cliente_id,                     
+                    status, 
+                    valor_total,
+                    endereco_origem,
+                    data_criacao
+                ) VALUES (?, ?, ?, 'Aguardando_Documentacao', ?, ?, NOW())
+            ");
+            $stmt->execute([
+                $proposta['vistoria_id'],
+                $proposta['id'],
+                $clienteId,                
+                $proposta['valor_total'],
+                $proposta['endereco']
+            ]);
+            $mudancaId = $pdo->lastInsertId();
+            
+            // 4. Atualizar status da vistoria
+            $stmt = $pdo->prepare("
+                UPDATE vistorias 
+                SET status = 'Proposta_Aceita' 
+                WHERE id = ?
+            ");
+            $stmt->execute([$proposta['vistoria_id']]);
+            
+            // 5. Registrar no histórico
+            $stmt = $pdo->prepare("
+                INSERT INTO historico_status 
+                (tabela, registro_id, status_anterior, status_novo, usuario_id, observacoes) 
+                VALUES 
+                ('propostas', ?, 'Enviada', 'Aceita', NULL, 'Cliente aceitou via portal'),
+                ('vistorias', ?, 'Proposta_Enviada', 'Proposta_Aceita', NULL, 'Proposta aceita pelo cliente'),
+                ('mudancas', ?, NULL, 'Aguardando_Documentacao', NULL, 'Mudança criada após aceite da proposta')
+            ");
+            $stmt->execute([$proposta['id'], $proposta['vistoria_id'], $mudancaId]);
+            
+            // 6. Gerar credenciais de acesso para o cliente
+            $senhaTemporaria = substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 8);
+            $senhaCriptografada = password_hash($senhaTemporaria, PASSWORD_DEFAULT);
+            
+            // Verificar se já existe um usuário para este cliente
+            $stmt = $pdo->prepare("
+                SELECT id FROM usuarios WHERE email = ? AND tipo = 'cliente'
+            ");
+            $stmt->execute([$proposta['email']]);
+            $usuarioExistente = $stmt->fetch();
+            
+            if (!$usuarioExistente && $proposta['email']) {
+                // Criar usuário para o cliente
+                $stmt = $pdo->prepare("
+                    INSERT INTO usuarios (nome, email, senha, tipo, ativo) 
+                    VALUES (?, ?, ?, 'cliente', 1)
+                ");
+                $stmt->execute([
+                    $proposta['cliente'],
+                    $proposta['email'],
+                    $senhaTemporaria
+                ]);
+                
+                // Aqui você pode adicionar código para enviar email com as credenciais
+                // Por enquanto, vamos armazenar na sessão para exibir
+                $_SESSION['senha_temporaria'] = $senhaTemporaria;
+            }
+            
+            $pdo->commit();
+            
+            // Definir variáveis de sessão
+            $sucesso = true;
+            $_SESSION['proposta_aceita'] = true;
+            $_SESSION['cliente_id'] = $clienteId;
+            $_SESSION['mudanca_id'] = $mudancaId;
+            
         } catch (Exception $e) {
+            $pdo->rollBack();
             $erro = 'Erro ao processar aceite. Por favor, tente novamente.';
             error_log('Erro ao aceitar proposta: ' . $e->getMessage());
+            echo $e;
         }
     } elseif ($acao === 'recusar') {
         $motivo = $_POST['motivo'] ?? 'Não informado';
@@ -155,6 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $proposta && !$erro) {
         } catch (Exception $e) {
             $pdo->rollBack();
             $erro = 'Erro ao processar recusa';
+            error_log('Erro ao recusar proposta: ' . $e->getMessage());
         }
     }
 }
@@ -591,6 +697,32 @@ function formatarDataHora($data) {
             vertical-align: middle;
         }
 
+        .credenciais-box {
+            background: #f0f9ff;
+            border: 2px solid #0284c7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .credenciais-box h4 {
+            color: #0c4a6e;
+            margin-bottom: 15px;
+        }
+
+        .credenciais-box p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .credenciais-box .senha {
+            font-family: monospace;
+            background: #e0f2fe;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 24px;
@@ -657,6 +789,18 @@ function formatarDataHora($data) {
                 </p>
             </div>
             
+            <?php if (isset($_SESSION['senha_temporaria']) && $proposta['email']): ?>
+            <div class="card credenciais-box">
+                <h4>🔐 Suas Credenciais de Acesso</h4>
+                <p><strong>Email:</strong> <?php echo htmlspecialchars($proposta['email']); ?></p>
+                <p><strong>Senha temporária:</strong> <span class="senha"><?php echo $_SESSION['senha_temporaria']; ?></span></p>
+                <p style="margin-top: 15px; font-size: 14px; color: #6b7280;">
+                    ⚠️ Por segurança, anote sua senha temporária. Você será solicitado a alterá-la no primeiro acesso.
+                </p>
+            </div>
+            <?php unset($_SESSION['senha_temporaria']); ?>
+            <?php endif; ?>
+            
             <div class="card">
                 <h3 style="margin-bottom: 20px;">📋 Próximos Passos</h3>
                 <ol style="line-height: 2; margin-left: 20px;">
@@ -665,6 +809,12 @@ function formatarDataHora($data) {
                     <li>Será solicitado o envio de alguns documentos necessários</li>
                     <li>Acompanhe todo o processo através do portal do cliente</li>
                 </ol>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <a href="portal-cliente/login.php" class="btn btn-accept">
+                        Acessar Portal do Cliente
+                    </a>
+                </div>
             </div>
             
         <?php elseif ($proposta): ?>
@@ -791,12 +941,17 @@ function formatarDataHora($data) {
     </div>
 
     <script>
-        function confirmarAceite() {
+        function confirmarAceite(event) {
+            event.preventDefault();
+            
             if (confirm('Você confirma que deseja aceitar esta proposta?\n\nValor: <?php echo $proposta ? formatarMoeda($proposta['valor_total']) : ''; ?>')) {
                 // Desabilitar botão para evitar duplo clique
-                const btn = event.target;
+                const btn = event.target.querySelector('button[value="aceitar"]');
                 btn.disabled = true;
                 btn.innerHTML = '<span class="loading"></span> Processando...';
+                
+                // Submeter o formulário
+                event.target.submit();
                 return true;
             }
             return false;
