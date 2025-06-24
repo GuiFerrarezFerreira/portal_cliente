@@ -34,7 +34,7 @@ function podeGerenciarVendedores() {
 }
 
 // Função para verificar se pode editar uma vistoria específica
-function podeEditarVistoria($vistoria) {
+/*function podeEditarVistoria($vistoria) {
     if(isGestor()) {
         return true;
     }
@@ -45,7 +45,7 @@ function podeEditarVistoria($vistoria) {
     }
     
     return false;
-}
+} */
 
 // Função para obter filtro SQL baseado no tipo de usuário
 function getFiltroVistorias() {

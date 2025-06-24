@@ -82,8 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $proposta && !$erro) {
             // Fazer chamada à API para aceitar proposta
             $data = json_encode(['token' => $token]);
             
-            $ch = curl_init('http://localhost/sistema-mudancas/api/propostas.php');
+            $ch = curl_init('http://localhost/portal_cliente/api/propostas.php');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);            
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
             curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -106,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $proposta && !$erro) {
                     $erro = $result['error'] ?? 'Erro ao processar aceite';
                 }
             } else {
-                $erro = 'Erro ao processar aceite. Por favor, tente novamente.';
+                $erro = 'Erro ao processar aceite. Por favor, tente novamente.'.$data;
             }
         } catch (Exception $e) {
             $erro = 'Erro ao processar aceite. Por favor, tente novamente.';
@@ -738,7 +739,7 @@ function formatarDataHora($data) {
                 
                 <form method="POST" id="formResposta">
                     <div class="buttons">
-                        <button type="submit" name="acao" value="aceitar" class="btn btn-accept" onclick="return confirmarAceite()">
+                        <button type="submit" name="acao" value="aceitar" class="btn btn-accept">
                             <span>✓</span> Aceitar Proposta
                         </button>
                         <button type="button" class="btn btn-reject" onclick="abrirModalRecusa()">

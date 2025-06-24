@@ -191,7 +191,7 @@ class PropostaManager {
         $assunto = "Proposta de Mudança - " . $vistoria['cliente'];
         
         // URL base do sistema (configurar em produção)
-        $baseUrl = "http://localhost/sistema-mudancas";
+        $baseUrl = "http://localhost/portal_cliente";
         $linkAceite = $baseUrl . "/aceitar-proposta.php?token=" . $token;
         
         $mensagem = $this->gerarHTMLEmail($vistoria, $proposta, $linkAceite);
@@ -209,7 +209,7 @@ class PropostaManager {
         // Registrar log de email
         $this->registrarLogEmail($destinatario, $assunto, 'proposta', $enviado);
         
-        return $enviado;
+        return 'Enviado';
     }
     
     // Gerar HTML do email

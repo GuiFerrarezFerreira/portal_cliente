@@ -60,14 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $cotacaoParceiro && !$erro) {
                     observacoes = ?,
                     data_resposta = NOW(),
                     ip_resposta = ?
-                WHERE id = ?
+                WHERE token_acesso = ?
             ");
             $stmt->execute([
                 $valor,
                 $prazoDias,
                 $observacoes,
                 $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
-                $cotacaoParceiro['id']
+                $cotacaoParceiro['token_acesso']
             ]);
             
             // Verificar se todos responderam
