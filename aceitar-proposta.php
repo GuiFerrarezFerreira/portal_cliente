@@ -90,14 +90,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $proposta && !$erro) {
                 'Content-Type: application/json',
                 'Content-Length: ' . strlen($data)
             ]);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false); // Não seguir redirecionamentos
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
             curl_close($ch);
             
-            if ($httpCode === 200) {
+            if ($curlError) {
+                $erro = 'Erro de conexão: ' . $curlError;
+            } elseif ($httpCode === 200) {
                 $result = json_decode($response, true);
-                if ($result['success']) {
+                if ($result && isset($result['success']) && $result['success']) {
                     $sucesso = true;
                     $_SESSION['proposta_aceita'] = true;
                     $_SESSION['cliente_id'] = $result['cliente_id'] ?? null;
@@ -106,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $proposta && !$erro) {
                     $erro = $result['error'] ?? 'Erro ao processar aceite';
                 }
             } else {
-                $erro = 'Erro ao processar aceite. Por favor, tente novamente.';
+                $erro = 'Erro ao processar aceite. Código HTTP: ' . $httpCode;
             }
         } catch (Exception $e) {
             $erro = 'Erro ao processar aceite. Por favor, tente novamente.';

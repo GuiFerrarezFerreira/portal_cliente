@@ -624,12 +624,19 @@ class PropostaManager {
 // Processar requisições
 try {
     // Para aceite de proposta, não precisa de autenticação
-    if ($method === 'PUT' && isset(json_decode(file_get_contents('php://input'), true)['token'])) {
-        $data = json_decode(file_get_contents('php://input'), true);
-        $manager = new PropostaManager($pdo, ['id' => 0, 'tipo' => 'sistema', 'nome' => 'Sistema']);
-        $resultado = $manager->aceitar($data['token'], $_SERVER['REMOTE_ADDR'] ?? null);
-        echo json_encode($resultado);
-        exit;
+    if ($method === 'PUT') {
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+        
+        if (isset($data['token']) && !empty($data['token'])) {
+            $manager = new PropostaManager($pdo, ['id' => 0, 'tipo' => 'sistema', 'nome' => 'Sistema']);
+            $resultado = $manager->aceitar($data['token'], $_SERVER['REMOTE_ADDR'] ?? null);
+            
+            header('Content-Type: application/json');
+            http_response_code(200);
+            echo json_encode($resultado);
+            exit;
+        }
     }
     
     // Outras operações precisam de autenticação
