@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $proposta && !$erro) {
                     $erro = $result['error'] ?? 'Erro ao processar aceite';
                 }
             } else {
-                $erro = 'Erro ao processar aceite. Por favor, tente novamente.'.$data;
+                $erro = 'Erro ao processar aceite. Por favor, tente novamente.';
             }
         } catch (Exception $e) {
             $erro = 'Erro ao processar aceite. Por favor, tente novamente.';
